@@ -1,0 +1,38 @@
+.sortWrapper {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  background: #e7eaf0;
+}
+
+.column {
+  flex: 1;
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.column h3 {
+  background: #a2a7b0;
+  padding: 0.5rem;
+  color: white;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sortCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  margin-bottom: 0.5rem;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.sliderImg {
+  width: 100px;
+  height: auto;
+  object-fit: cover;
+}

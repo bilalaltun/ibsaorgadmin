@@ -1,0 +1,69 @@
+.container {
+  padding: 2rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.tabMenu {
+  display: flex;
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 1rem;
+}
+
+.tabButton {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: none;
+  font-weight: bold;
+  cursor: pointer;
+  color: #555;
+}
+
+.tabButton:hover {
+  color: #000;
+}
+
+.active {
+  border-bottom: 2px solid #0070f3;
+  color: #0070f3;
+}
+
+.form-card {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin: auto;
+}
+
+.form-card label {
+  font-weight: 500;
+}
+
+.form-card input,
+.form-card textarea {
+  padding: 0.65rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  width: 100%;
+}
+
+.form-card button {
+  padding: 0.75rem;
+  background: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  width: fit-content;
+  align-self: flex-end;
+}

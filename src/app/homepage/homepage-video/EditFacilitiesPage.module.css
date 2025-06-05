@@ -1,0 +1,144 @@
+/* EditVideoPage.module.css */
+
+.container {
+  padding: 40px 20px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.08);
+}
+
+.title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.langTabs {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 1rem 0px;
+}
+
+.langTabs button {
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background: #f0f0f0;
+  font-weight: 600;
+  width: 30%;
+  min-width: 75px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.langTabs button:hover {
+  background-color: #dbeafe;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+.langTabs .active {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+
+.section {
+  margin-bottom: 30px;
+}
+
+.section label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.section input[type="text"],
+.section textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+.section textarea {
+  resize: vertical;
+}
+
+.itemGroup {
+  background: #f9f9f9;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.itemGroup h4 {
+  margin-top: 0;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.itemGroup label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.itemGroup input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.itemGroup .removeButton {
+  background-color: #e53935;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.addButton {
+  display: block;
+  margin: 20px 0;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.submitButton {
+  display: block;
+  width: 100%;
+  margin: 2rem auto 0 auto;
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: linear-gradient(to right, #00c6ff, #0072ff);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 114, 255, 0.4);
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.submitButton:hover {
+  background: linear-gradient(to right, #0072ff, #00c6ff);
+  transform: translateY(-2px);
+}

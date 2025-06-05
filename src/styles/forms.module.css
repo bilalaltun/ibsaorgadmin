@@ -1,0 +1,141 @@
+/* === Genel Form Kapsayıcı === */
+.formContainer {
+    background: #ffffff;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  
+  /* === Başlık === */
+  .formTitle {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: #2c3e50;
+    text-align: left;
+  }
+  
+  /* === Etiketler === */
+  .formLabel {
+    display: block;
+    font-weight: 500;
+    margin-top: 20px;
+    margin-bottom: 8px;
+    color: #34495e;
+  }
+  
+  /* === Input, Textarea, Select === */
+  .formInput,
+  .formTextarea,
+  .formSelect {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 15px;
+    border: 1px solid #ccd1d1;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s ease;
+    background-color: #fafafa;
+  }
+  
+  .formInput:focus,
+  .formTextarea:focus,
+  .formSelect:focus {
+    border-color: #3498db;
+    background-color: #fff;
+    outline: none;
+  }
+  
+  /* === Textarea özel === */
+  .formTextarea {
+    min-height: 140px;
+    resize: vertical;
+  }
+  
+  /* === Dosya seçimi === */
+  .formFileInput {
+    padding: 10px;
+    background: #fff;
+    border: 1px solid #ccd1d1;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    width: 100%;
+  }
+  
+  /* === Başarı ve Hata Mesajları === */
+  .formError {
+    color: #e74c3c;
+    font-weight: 500;
+    font-size: 14px;
+    margin-top: 10px;
+  }
+  
+  .formSuccess {
+    color: #27ae60;
+    font-weight: 500;
+    font-size: 14px;
+    margin-top: 10px;
+  }
+  
+  /* === Kaydet Butonu === */
+  .submitBtn {
+    margin-top: 24px;
+    background-color: #3498db;
+    color: #ffffff;
+    border: none;
+    padding: 14px 28px;
+    font-size: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease;
+  }
+  
+  .submitBtn:hover:not(:disabled) {
+    background-color: #2980b9;
+  }
+  
+  .submitBtn:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+  }
+  
+  /* === Dil Butonları (opsiyonel class) === */
+  .langTabBtn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background-color: #ecf0f1;
+    color: #333;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  
+  .langTabBtn.active {
+    background-color: #3498db;
+    color: #fff;
+  }
+  
+  /* === Responsive === */
+  @media (max-width: 768px) {
+    .formContainer {
+      padding: 20px;
+    }
+  
+    .formTitle {
+      font-size: 1.5rem;
+      text-align: center;
+    }
+  
+    .formInput,
+    .formTextarea,
+    .formSelect,
+    .submitBtn {
+      font-size: 14px;
+      padding: 10px 14px;
+    }
+  }
+  

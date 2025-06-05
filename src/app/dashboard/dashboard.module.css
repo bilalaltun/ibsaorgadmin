@@ -1,0 +1,115 @@
+/* dashboard.module.css */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: sans-serif;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  background-color: #f9f9f9;
+  padding: 1.2rem;
+  border-radius: 10px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.06);
+  gap: 1rem;
+}
+
+.card span {
+  font-size: 2rem;
+}
+
+.card p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.card strong {
+  font-size: 1.4rem;
+}
+
+.weather {
+  background-color: #eef6ff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  margin-bottom: 3rem;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.05);
+}
+
+.weather h2 {
+  margin-bottom: 1rem;
+}
+
+.generator {
+  background-color: #fef8e4;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.05);
+}
+
+.generator textarea {
+  width: 100%;
+  height: 100px;
+  margin-bottom: 1rem;
+  padding: 0.8rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.generator button {
+  background-color: #0070f3;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.generator button:hover {
+  background-color: #005dc1;
+}
+
+.output {
+  margin-top: 1.2rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+.output pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.output button {
+  margin-top: 0.5rem;
+  background-color: #4caf50;
+  color: white;
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.output button:hover {
+  background-color: #388e3c;
+}
