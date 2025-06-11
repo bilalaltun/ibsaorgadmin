@@ -179,7 +179,7 @@
  *           example: "2025-06-22"
  *         category_id:
  *           type: string
- *           example: 1
+ *           example: "1"
  *         location:
  *           type: string
  *           example: "Lisbon (Portugal)"

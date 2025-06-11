@@ -117,10 +117,10 @@
  *     CategoryInput:
  *       type: object
  *       required:
- *         - title
+ *         - name
  *         - isactive
  *       properties:
- *         title:
+ *         name:
  *           type: string
  *           example: "Ürün Kategorisi"
  *         isactive:
@@ -133,7 +133,7 @@
  *         id:
  *           type: integer
  *           example: 1
- *         title:
+ *         name:
  *           type: string
  *           example: "Ürün Kategorisi"
  *         isactive:
@@ -196,14 +196,14 @@ const handler = async (req, res) => {
             }
 
             case "POST": {
-                const { title, isactive } = req.body;
+                const { name, isactive } = req.body;
 
-                if (!title || typeof isactive !== "boolean") {
+                if (!name || typeof isactive !== "boolean") {
                     return res.status(400).json({ error: "Eksik veya hatalı veri gönderildi." });
                 }
 
                 try {
-                    await db("Categories").insert({ title, isactive });
+                    await db("Categories").insert({ name, isactive });
 
                     return res.status(201).json({ success: true });
                 } catch (err) {
@@ -215,13 +215,13 @@ const handler = async (req, res) => {
             case "PUT": {
                 if (!id) return res.status(400).json({ error: "ID gereklidir." });
 
-                const { title, isactive } = req.body;
+                const { name, isactive } = req.body;
 
-                if (!title || typeof isactive !== "boolean") {
+                if (!name || typeof isactive !== "boolean") {
                     return res.status(400).json({ error: "Eksik veya hatalı veri gönderildi." });
                 }
 
-                await db("Categories").where({ id }).update({ title, isactive });
+                await db("Categories").where({ id }).update({ name, isactive });
 
                 return res.status(200).json({ message: "Kategori güncellendi." });
             }
