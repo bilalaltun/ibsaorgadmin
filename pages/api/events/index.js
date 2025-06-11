@@ -247,7 +247,6 @@ const handler = async (req, res) => {
         ? [parseInt(category_id)]
         : [];
 
-      // Süperadmin değilse kategori kontrolü yap
       if (req.user?.role !== "superadmin") {
         if (!categoryIds.length) {
           return res.status(400).json({ error: "En az bir kategori seçilmelidir" });
