@@ -147,9 +147,9 @@
  *         content:
  *           type: string
  *           example: "<p>Ipsa, geliştirdiği yeni CNC teknolojisiyle üretim süreçlerinde devrim yaratıyor. Bu sistem sayesinde enerji tüketimi düşerken, hassasiyet artıyor.</p>"
- *         category:
+ *         category_id:
  *           type: string
- *           example: "Endüstri 4.0"
+ *           example: 1
  *         tags:
  *           type: array
  *           items:
@@ -184,7 +184,7 @@
  *           type: string
  *         content:
  *           type: string
- *         category:
+ *         category_id:
  *           type: string
  *         tags:
  *           type: array
@@ -208,82 +208,70 @@ const handler = async (req, res) => {
     }
   }
 
-// GET
-if (req.method === "GET") {
-  try {
-    const { id, link, pageSize = 10, currentPage = 1 } = req.query;
-    const pageInt = Math.max(parseInt(pageSize), 1);         // en az 1
-    const currentPageInt = Math.max(parseInt(currentPage), 1); // en az 1
+  // GET
+  if (req.method === "GET") {
+    try {
+      const { id, link, pageSize = 10, currentPage = 1 } = req.query;
+      const pageInt = Math.max(parseInt(pageSize), 1);
+      const currentPageInt = Math.max(parseInt(currentPage), 1);
 
-    let blog;
+      let blog;
 
-    if (id || link) {
-      blog = id
-        ? await db("Blogs").where({ id }).first()
-        : await db("Blogs").where({ link }).first();
+      if (id || link) {
+        blog = id
+          ? await db("Blogs").where({ id }).first()
+          : await db("Blogs").where({ link }).first();
 
-      if (!blog) return res.status(404).json({ error: "Blog bulunamadı" });
+        if (!blog) return res.status(404).json({ error: "Blog bulunamadı" });
 
-      const tags = await db("BlogTags").where({ blog_id: blog.id });
+        const tags = await db("BlogTags").where({ blog_id: blog.id });
+        const category = blog.category_id
+          ? await db("Categories").where({ id: blog.category_id }).first()
+          : null;
+
+        return res.status(200).json({
+          ...blog,
+          category: category ? { id: category.id, name: category.name } : null,
+          tags: tags.map(t => t.tag),
+        });
+      }
+
+      const total = await db("Blogs").count("* as count").first();
+      const totalCount = total?.count || 0;
+      const totalPages = Math.ceil(totalCount / pageInt);
+
+      const blogs = await db("Blogs")
+        .orderBy("date", "desc")
+        .limit(pageInt)
+        .offset((currentPageInt - 1) * pageInt);
+
+      const allTags = await db("BlogTags");
+      const allCategories = await db("Categories");
+
+      const data = blogs.map((blog) => {
+        const category = allCategories.find(c => c.id === blog.category_id);
+
+        return {
+          ...blog,
+          category: category ? { id: category.id, name: category.name } : null,
+          tags: allTags.filter(t => t.blog_id === blog.id).map(t => t.tag),
+        };
+      });
 
       return res.status(200).json({
-        id: blog.id,
-        link: blog.link,
-        thumbnail: blog.thumbnail,
-        date: blog.date,
-        author: blog.author,
-        title: blog.title,
-        details: blog.details,
-        content: blog.content,
-        category: blog.category,
-        isactive: blog.isactive,
-        show_at_home: blog.show_at_home,
-        tags: tags.map(t => t.tag),
+        data,
+        pagination: {
+          pageSize: pageInt,
+          currentPage: currentPageInt,
+          total: totalCount,
+          totalPages,
+        },
       });
+    } catch (err) {
+      console.error("[GET /blogs]", err);
+      res.status(500).json({ error: "GET failed", details: err.message });
     }
-
-    const total = await db("Blogs").count("* as count").first();
-    const totalCount = total?.count || 0;
-    const totalPages = Math.ceil(totalCount / pageInt);
-
-    const blogs = await db("Blogs")
-      .orderBy("date", "desc")
-      .limit(pageInt)
-      .offset((currentPageInt - 1) * pageInt);
-
-    const allTags = await db("BlogTags");
-
-    const data = blogs.map((blog) => ({
-      id: blog.id,
-      link: blog.link,
-      thumbnail: blog.thumbnail,
-      date: blog.date,
-      author: blog.author,
-      title: blog.title,
-      details: blog.details,
-      content: blog.content,
-      category: blog.category,
-      isactive: blog.isactive,
-      show_at_home: blog.show_at_home,
-      tags: allTags
-        .filter(t => t.blog_id === blog.id)
-        .map(t => t.tag),
-    }));
-
-    return res.status(200).json({
-      data,
-      pagination: {
-        pageSize: pageInt,
-        currentPage: currentPageInt,
-        total: totalCount,
-        totalPages,
-      },
-    });
-  } catch (err) {
-    console.error("[GET /blogs]", err);
-    res.status(500).json({ error: "GET failed", details: err.message });
   }
-}
 
   // POST
   else if (req.method === "POST") {
@@ -295,7 +283,7 @@ if (req.method === "GET") {
       title,
       details,
       content,
-      category,
+      category_id,
       isactive,
       show_at_home,
       tags = [],
@@ -303,13 +291,23 @@ if (req.method === "GET") {
 
     try {
       await db.transaction(async (trx) => {
-        const rawResult = await trx.raw(
-          `INSERT INTO Blogs (link, thumbnail, date, author, title, details, content, category, isactive, show_at_home)
-           OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [link, thumbnail, date, author, title, details, content, category, isactive, show_at_home]
-        );
+        const rawResult = await trx("Blogs")
+          .insert({
+            link,
+            thumbnail,
+            date,
+            author,
+            title,
+            details,
+            content,
+            category_id,
+            isactive,
+            show_at_home,
+          })
+          .returning("id");
 
-        const blogId = rawResult[0]?.id;
+        const blogId = rawResult[0]?.id || rawResult[0]; // PostgreSQL için {id: x}, MSSQL için doğrudan id
+
         if (!blogId) throw new Error("Blog ID alınamadı.");
 
         for (const tag of tags) {
@@ -336,7 +334,7 @@ if (req.method === "GET") {
       title,
       details,
       content,
-      category,
+      category_id,
       tags = [],
       isactive,
       show_at_home,
@@ -346,7 +344,18 @@ if (req.method === "GET") {
       await db.transaction(async (trx) => {
         await trx("Blogs")
           .where({ id })
-          .update({ link, thumbnail, date, author, title, details, content, category, isactive, show_at_home });
+          .update({
+            link,
+            thumbnail,
+            date,
+            author,
+            title,
+            details,
+            content,
+            category_id,
+            isactive,
+            show_at_home,
+          });
 
         await trx("BlogTags").where({ blog_id: id }).del();
 
@@ -383,8 +392,7 @@ if (req.method === "GET") {
   else {
     res.status(405).json({ error: "Method not allowed" });
   }
-};
+}
 
 export default withCors(handler);
-
 

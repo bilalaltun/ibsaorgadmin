@@ -127,9 +127,9 @@
  *           type: string
  *           format: date
  *           example: "2025-06-22"
- *         category:
+ *         category_id:
  *           type: string
- *           example: "Goalball"
+ *           example: 1
  *         location:
  *           type: string
  *           example: "Lisbon (Portugal)"
@@ -162,7 +162,7 @@
  *         - title
  *         - start_date
  *         - end_date
- *         - category
+ *         - category_id
  *         - location
  *         - isactive
  *       properties:
@@ -177,9 +177,9 @@
  *           type: string
  *           format: date
  *           example: "2025-06-22"
- *         category:
+ *         category_id:
  *           type: string
- *           example: "Goalball"
+ *           example: 1
  *         location:
  *           type: string
  *           example: "Lisbon (Portugal)"
@@ -219,49 +219,75 @@ const handler = async (req, res) => {
     }
   }
 
-  // GET 
-  if (method === "GET") {
-    try {
-      if (id) {
-        const event = await db("Events").where({ id }).first();
-        if (!event) return res.status(404).json({ error: "Etkinlik bulunamadı" });
-        return res.status(200).json(event);
-      }
+// GET 
+if (method === "GET") {
+  try {
+    if (id) {
+      const event = await db("Events")
+        .leftJoin("Categories", "Events.category_id", "Categories.id")
+        .select("Events.*", "Categories.name as category_name")
+        .where("Events.id", id)
+        .first();
 
-      const pageSize = parseInt(req.query.pageSize) || 10;
-      const currentPage = parseInt(req.query.currentPage) || 1;
-      const offset = (currentPage - 1) * pageSize;
-
-      const totalCountResult = await db("Events").count("id as count").first();
-      const totalCount = Number(totalCountResult?.count || 0);
-
-      const events = await db("Events")
-        .orderBy("start_date", "asc")
-        .limit(pageSize)
-        .offset(offset);
-
-      return res.status(200).json({
-        data: events,
-        pagination: {
-          currentPage,
-          pageSize,
-          total: totalCount,
-          totalPages: Math.ceil(totalCount / pageSize)
-        }
-      });
-    } catch (err) {
-      console.error("[GET /events]", err);
-      return res.status(500).json({ error: "GET failed", details: err.message });
+      if (!event) return res.status(404).json({ error: "Etkinlik bulunamadı" });
+      return res.status(200).json(event);
     }
+
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const currentPage = parseInt(req.query.currentPage) || 1;
+    const offset = (currentPage - 1) * pageSize;
+
+    const totalCountResult = await db("Events").count("id as count").first();
+    const totalCount = Number(totalCountResult?.count || 0);
+
+    const events = await db("Events")
+      .leftJoin("Categories", "Events.category_id", "Categories.id")
+      .select("Events.*", "Categories.name as category_name")
+      .orderBy("start_date", "asc")
+      .limit(pageSize)
+      .offset(offset);
+
+    return res.status(200).json({
+      data: events,
+      pagination: {
+        currentPage,
+        pageSize,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / pageSize)
+      }
+    });
+  } catch (err) {
+    console.error("[GET /events]", err);
+    return res.status(500).json({ error: "GET failed", details: err.message });
+  }
+}
+
+// POST 
+else if (method === "POST") {
+  const {
+    title,
+    start_date,
+    end_date,
+    category_id,
+    location,
+    sanction_type,
+    contact_email,
+    image_url,
+    description,
+    downloads,
+    isactive,
+  } = req.body;
+
+  if (!title || !start_date || !end_date || !category_id || !location || isactive === undefined) {
+    return res.status(400).json({ error: "Zorunlu alanlar eksik." });
   }
 
-  // POST 
-  else if (method === "POST") {
-    const {
+  try {
+    await db("Events").insert({
       title,
       start_date,
       end_date,
-      category,
+      category_id,
       location,
       sanction_type,
       contact_email,
@@ -269,75 +295,57 @@ const handler = async (req, res) => {
       description,
       downloads,
       isactive,
-    } = req.body;
+      created_at: new Date(),
+    });
 
-    if (!title || !start_date || !end_date || !category || !location || isactive === undefined) {
-      return res.status(400).json({ error: "Zorunlu alanlar eksik." });
-    }
-
-    try {
-      await db("Events").insert({
-        title,
-        start_date,
-        end_date,
-        category,
-        location,
-        sanction_type,
-        contact_email,
-        image_url,
-        description,
-        downloads,
-        isactive,
-        created_at: new Date(),
-      });
-
-      return res.status(201).json({ success: true });
-    } catch (err) {
-      console.error("[POST /events]", err);
-      return res.status(500).json({ error: "POST failed", details: err.message });
-    }
+    return res.status(201).json({ success: true });
+  } catch (err) {
+    console.error("[POST /events]", err);
+    return res.status(500).json({ error: "POST failed", details: err.message });
   }
+}
 
-  // PUT 
-  else if (method === "PUT") {
-    if (!id) return res.status(400).json({ error: "ID parametresi zorunludur." });
+// PUT 
+else if (method === "PUT") {
+  if (!id) return res.status(400).json({ error: "ID parametresi zorunludur." });
 
-    try {
-      const event = await db("Events").where({ id }).first();
-      if (!event) return res.status(404).json({ error: "Etkinlik bulunamadı" });
+  try {
+    const event = await db("Events").where({ id }).first();
+    if (!event) return res.status(404).json({ error: "Etkinlik bulunamadı" });
 
-      await db("Events").where({ id }).update({
-        ...req.body
-      });
+    await db("Events").where({ id }).update({
+      ...req.body
+    });
 
-      return res.status(200).json({ success: true });
-    } catch (err) {
-      console.error("[PUT /events]", err);
-      return res.status(500).json({ error: "PUT failed", details: err.message });
-    }
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("[PUT /events]", err);
+    return res.status(500).json({ error: "PUT failed", details: err.message });
   }
+}
 
-  // DELETE 
-  else if (method === "DELETE") {
-    if (!id) return res.status(400).json({ error: "ID parametresi zorunludur." });
+// DELETE 
+else if (method === "DELETE") {
+  if (!id) return res.status(400).json({ error: "ID parametresi zorunludur." });
 
-    try {
-      const exists = await db("Events").where({ id }).first();
-      if (!exists) return res.status(404).json({ error: "Etkinlik bulunamadı" });
+  try {
+    const exists = await db("Events").where({ id }).first();
+    if (!exists) return res.status(404).json({ error: "Etkinlik bulunamadı" });
 
-      await db("Events").where({ id }).del();
-      return res.status(200).json({ success: true });
-    } catch (err) {
-      console.error("[DELETE /events]", err);
-      return res.status(500).json({ error: "DELETE failed", details: err.message });
-    }
+    await db("Events").where({ id }).del();
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("[DELETE /events]", err);
+    return res.status(500).json({ error: "DELETE failed", details: err.message });
   }
+}
 
-  // Diğer HTTP method'ları için:
-  else {
-    res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
-    return res.status(405).end(`Method ${method} Not Allowed`);
-  }
+// Diğer HTTP method'ları
+else {
+  res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
+  return res.status(405).end(`Method ${method} Not Allowed`);
+}
+
 };
 
 export default withCors(handler);

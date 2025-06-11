@@ -30,6 +30,7 @@ const options = {
     path.resolve('./pages/api/dashboard/generate.js'),
     path.resolve('./pages/api/events/index.js'),
     path.resolve('./pages/api/catalogs/index.js'),
+    path.resolve('./pages/api/categories/index.js'),
     path.resolve('./pages/api/certificates/index.js'),
     path.resolve('./pages/api/contacts/index.js'),
     path.resolve('./pages/api/countdowns/index.js'),
