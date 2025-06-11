@@ -31,24 +31,10 @@
  *           application/json:
  *             schema:
  *               oneOf:
- *                 - $ref: '#/components/schemas/User'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/User'
- *                     pagination:
- *                       type: object
- *                       properties:
- *                         totalPagesCount:
- *                           type: integer
- *                         currentPage:
- *                           type: integer
- *                         pageSize:
- *                           type: integer
- *                         currentPageCount:
- *                           type: integer
+ *                 - $ref: '#/components/schemas/UserWithRole'
+ *                 - type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/UserWithRole'
  *
  *   post:
  *     summary: Yeni kullanıcı oluştur
@@ -123,7 +109,7 @@
  *
  * components:
  *   schemas:
- *     User:
+ *     UserWithRole:
  *       type: object
  *       properties:
  *         id:
@@ -139,6 +125,13 @@
  *         isactive:
  *           type: boolean
  *           example: true
+ *         date:
+ *           type: string
+ *           format: date
+ *           example: 2025-06-11
+ *         role:
+ *           type: string
+ *           example: admin
  *
  *     UserInput:
  *       type: object
@@ -156,6 +149,10 @@
  *         isactive:
  *           type: boolean
  *           example: true
+ *         role_id:
+ *           type: integer
+ *           example: 1
+ *           description: İlgili role tablosundaki ID (opsiyonel)
  */
 
 import db from "../../../lib/db";
@@ -165,97 +162,128 @@ import { verifyToken } from "../../../lib/authMiddleware";
 const handler = async (req, res) => {
   const id = req.query.id ? parseInt(req.query.id) : null;
 
-   // Sadece bu HTTP metodlarında token kontrolü uygula
   if (["POST", "PUT", "DELETE"].includes(req.method)) {
     try {
-      verifyToken(req); // Token kontrolü yapılır
+      await verifyToken(req); // req.user ayarlanmalı
     } catch (err) {
       return res.status(401).json({ error: err.message });
     }
   }
 
-// GET
-if (req.method === "GET") {
-  try {
-    const id = req.query.id ? parseInt(req.query.id) : null;
-    const currentPage = parseInt(req.query.currentPage || "1");
-    const pageSize = parseInt(req.query.pageSize || "10");
+  // GET
+  if (req.method === "GET") {
+    try {
+      const currentPage = parseInt(req.query.currentPage || "1");
+      const pageSize = parseInt(req.query.pageSize || "10");
 
-    let usersQuery = db("Users").orderBy("date", "desc");
+      let usersQuery = db("Users").orderBy("date", "desc");
 
-    if (id) {
-      usersQuery = usersQuery.where({ id });
-    } else {
-      const offset = (currentPage - 1) * pageSize;
-      usersQuery = usersQuery.offset(offset).limit(pageSize);
+      if (id) {
+        usersQuery = usersQuery.where({ id });
+      } else {
+        const offset = (currentPage - 1) * pageSize;
+        usersQuery = usersQuery.offset(offset).limit(pageSize);
+      }
+
+      const users = await usersQuery;
+
+      if (!users || users.length === 0) {
+        return res.status(200).json([]);
+      }
+
+      // Kullanıcı rollerini çek
+      const userIds = users.map(u => u.id);
+      const roles = await db("UserRoles")
+        .join("Roles", "UserRoles.role_id", "Roles.id")
+        .whereIn("UserRoles.user_id", userIds)
+        .select("UserRoles.user_id", "Roles.name as role");
+
+      const result = users.map((user) => {
+        const userRole = roles.find(r => r.user_id === user.id);
+        return {
+          id: user.id,
+          username: user.username,
+          password: user.password,
+          isactive: user.isactive,
+          date: user.date,
+          role: userRole?.role || null
+        };
+      });
+
+      res.status(200).json(id ? result[0] : result);
+    } catch (err) {
+      console.error("[GET /users]", err);
+      res.status(500).json({ error: "GET failed", details: err.message });
     }
-
-    const users = await usersQuery;
-
-    if (!users || users.length === 0) {
-      return res.status(200).json([]);
-    }
-
-    const result = users.map((user) => ({
-      id: user.id,
-      username: user.username,
-      password: user.password,
-      isactive: user.isactive,
-      date: user.date,
-    }));
-
-    const safeJson = JSON.parse(JSON.stringify(id ? result[0] : result));
-    res.status(200).json(safeJson);
-  } catch (err) {
-    console.error("[GET /users]", err);
-    res.status(500).json({ error: "GET failed", details: err.message });
   }
-}
 
-
-  //POST
+  // POST
   else if (req.method === "POST") {
-    const { username, password, isactive } = req.body;
+    const { username, password, isactive, role_id } = req.body;
 
     try {
-      await db("Users").insert({
-        username,
-        password,
-        isactive,
-        date: new Date(),
+      await db.transaction(async trx => {
+        const [userId] = await trx("Users").insert({
+          username,
+          password,
+          isactive,
+          date: new Date(),
+        }).returning("id");
+
+        if (role_id) {
+          await trx("UserRoles").insert({ user_id: userId.id || userId, role_id });
+        }
       });
+
       res.status(201).json({ success: true });
     } catch (err) {
       console.error("[POST /users]", err);
-      res.status(500).json({ error: "POST failed" });
+      res.status(500).json({ error: "POST failed", details: err.message });
     }
   }
 
-  //PUT
+  // PUT
   else if (req.method === "PUT") {
     if (!id) return res.status(400).json({ error: "ID gerekli" });
-    const { username, password, isactive, date } = req.body;
+
+    const { username, password, isactive, date, role_id } = req.body;
 
     try {
-      await db("Users")
-        .where({ id })
-        .update({ username, password, isactive, date });
+      await db.transaction(async trx => {
+        await trx("Users").where({ id }).update({ username, password, isactive, date });
+
+        if (role_id) {
+          const exists = await trx("UserRoles").where({ user_id: id }).first();
+          if (exists) {
+            await trx("UserRoles").where({ user_id: id }).update({ role_id });
+          } else {
+            await trx("UserRoles").insert({ user_id: id, role_id });
+          }
+        }
+      });
+
       res.status(200).json({ success: true });
     } catch (err) {
       console.error("[PUT /users]", err);
-      res.status(500).json({ error: "PUT failed" });
+      res.status(500).json({ error: "PUT failed", details: err.message });
     }
-  } else if (req.method === "DELETE") {
+  }
+
+  // DELETE
+  else if (req.method === "DELETE") {
     if (!id) return res.status(400).json({ error: "ID gerekli" });
 
     try {
-      await db("Users").where({ id }).del();
+      await db("Users").where({ id }).del(); // CASCADE ile UserRoles de silinir
       res.status(200).json({ success: true });
     } catch (err) {
       console.error("[DELETE /users]", err);
       res.status(500).json({ error: "DELETE failed" });
     }
-  } else {
+  }
+
+  // Method not allowed
+  else {
     res.status(405).json({ error: "Method not allowed" });
   }
 };

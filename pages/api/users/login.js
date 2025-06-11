@@ -68,7 +68,19 @@ const handler = async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const user = await db("Users").where({ username, password }).first();
+    const user = await db("Users as u")
+      .leftJoin("UserRoles as ur", "u.id", "ur.user_id")
+      .leftJoin("Roles as r", "ur.role_id", "r.id")
+      .select(
+        "u.id",
+        "u.username",
+        "u.password",
+        "u.isactive",
+        "u.date",
+        "r.name as role"
+      )
+      .where({ "u.username": username, "u.password": password })
+      .first();
 
     if (!user || user.isactive !== true) {
       return res.status(401).json({ error: "Invalid username or password" });
@@ -79,8 +91,10 @@ const handler = async (req, res) => {
         id: user.id,
         username: user.username,
         isactive: user.isactive,
+        role: user.role,
+
       },
-      "kjhgfdJHGFDSDFGH9876rfghGFDS84", 
+      "kjhgfdJHGFDSDFGH9876rfghGFDS84",
       { expiresIn: "7d" }
     );
 
@@ -90,6 +104,7 @@ const handler = async (req, res) => {
         id: user.id,
         username: user.username,
         isactive: user.isactive,
+        role: user.role,
         date: user.date,
       },
     });
