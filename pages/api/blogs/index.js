@@ -334,8 +334,6 @@ if (req.method === "GET") {
   }
 }
 
-
-
   //POST
   else if (req.method === "POST") {
     const {
