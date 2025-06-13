@@ -165,15 +165,24 @@ import { verifyToken } from "../../../lib/authMiddleware";
 const handler = async (req, res) => {
   const id = req.query.id ? parseInt(req.query.id) : null;
 
+if (["POST", "PUT", "DELETE"].includes(req.method)) {
+  try {
+    verifyToken(req); 
+  } catch (err) {
+    return res.status(401).json({ error: err.message });
+  }
+}
+
+  // Authentication kontrolü sadece POST, PUT, DELETE için gerekli
   if (["POST", "PUT", "DELETE"].includes(req.method)) {
     try {
-      verifyToken(req); 
+      verifyToken(req);
     } catch (err) {
       return res.status(401).json({ error: err.message });
     }
   }
 
-  // GET
+  // GET -
   if (req.method === "GET") {
     try {
       const { pageSize = 10, currentPage = 1 } = req.query;
@@ -181,23 +190,22 @@ const handler = async (req, res) => {
       const currentPageInt = parseInt(currentPage);
 
       if (id) {
-        const member = await db("TeamMembers").where({ id }).first();
-        if (!member) return res.status(404).json({ error: "Üye bulunamadı" });
-
-        return res.status(200).json(member);
+        const partner = await db("Partners").where({ id }).first();
+        if (!partner) return res.status(404).json({ error: "Partner bulunamadı" });
+        return res.status(200).json(partner);
       }
 
-      const total = await db("TeamMembers").count("* as count").first();
+      const total = await db("Partners").count("* as count").first();
       const totalCount = total?.count || 0;
       const totalPages = Math.ceil(totalCount / pageInt);
 
-      const members = await db("TeamMembers")
+      const partners = await db("Partners")
         .orderBy("id", "desc")
         .limit(pageInt)
         .offset((currentPageInt - 1) * pageInt);
 
       return res.status(200).json({
-        data: members,
+        data: partners,
         pagination: {
           pageSize: pageInt,
           currentPage: currentPageInt,
@@ -206,84 +214,71 @@ const handler = async (req, res) => {
         },
       });
     } catch (err) {
-      console.error("[GET /team-members]", err);
-      res.status(500).json({ error: "GET failed", details: err.message });
+      console.error("[GET /partners]", err);
+      return res.status(500).json({ error: "GET failed", details: err.message });
     }
   }
 
-// POST
-else if (req.method === "POST") {
-  const { title, url = null, isactive = true } = req.body;
+  // POST 
+  else if (req.method === "POST") {
+    const { title, url, isactive } = req.body;
 
-  if (!title) {
-    return res.status(400).json({ error: "Title alanı zorunludur." });
+    try {
+      await db("Partners").insert({
+        title,
+        url,
+        isactive,
+        created_at: new Date(),
+      });
+      return res.status(201).json({ success: true });
+    } catch (err) {
+      console.error("[POST /partners]", err);
+      return res.status(500).json({ error: "POST failed", details: err.message });
+    }
   }
 
-  try {
-    await db("Partners").insert({
-      title,
-      url,
-      isactive,
-      created_at: new Date(),
-    });
-
-    return res.status(201).json({ success: true });
-  } catch (err) {
-    console.error("[POST /partners]", err);
-    return res.status(500).json({ error: "POST failed", details: err.message });
-  }
-}
-
-
-  // PUT
+  // PUT 
   else if (req.method === "PUT") {
     if (!id) return res.status(400).json({ error: "ID gerekli" });
 
-    const {
-      name,
-      position,
-      email,
-      photo_url,
-      flag_url,
-      isactive,
-    } = req.body;
+    const { title, url, isactive } = req.body;
 
     try {
-      await db("TeamMembers")
+      const updated = await db("Partners")
         .where({ id })
         .update({
-          name,
-          position,
-          email,
-          photo_url,
-          flag_url,
+          title,
+          url,
           isactive,
         });
 
-      res.status(200).json({ success: true });
+      if (!updated) return res.status(404).json({ error: "Partner bulunamadı" });
+
+      return res.status(200).json({ success: true });
     } catch (err) {
-      console.error("[PUT /team-members]", err);
-      res.status(500).json({ error: "PUT failed", details: err.message });
+      console.error("[PUT /partners]", err);
+      return res.status(500).json({ error: "PUT failed", details: err.message });
     }
   }
 
-  // DELETE
+  // DELETE 
   else if (req.method === "DELETE") {
     if (!id) return res.status(400).json({ error: "ID gerekli" });
 
     try {
-      await db("TeamMembers").where({ id }).del();
-      res.status(200).json({ success: true });
+      const deleted = await db("Partners").where({ id }).del();
+
+      if (!deleted) return res.status(404).json({ error: "Partner bulunamadı" });
+
+      return res.status(200).json({ success: true });
     } catch (err) {
-      console.error("[DELETE /team-members]", err);
-      res.status(500).json({ error: "DELETE failed", details: err.message });
+      console.error("[DELETE /partners]", err);
+      return res.status(500).json({ error: "DELETE failed", details: err.message });
     }
   }
-
-  // Unsupported method
   else {
-    res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 };
 
-export default withCors(handler);
+export default withCors(handler); 
