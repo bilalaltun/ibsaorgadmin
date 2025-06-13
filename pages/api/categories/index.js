@@ -2,36 +2,31 @@
  * @swagger
  * tags:
  *   - name: Categories
- *     description: Kategori işlemleri
+ *     description: Kategori ve Alt Kategori işlemleri
  *
  * /api/categories:
  *   get:
- *     summary: Kategorileri getir (liste veya ID ile detay)
+ *     summary: Kategorileri ve iç içe alt kategorileri getir
  *     tags: [Categories]
  *     parameters:
  *       - in: query
  *         name: id
- *         required: false
  *         schema:
  *           type: integer
- *         description: Kategori ID'si (verilirse sadece o kategori döner)
- *       - in: query
- *         name: pageSize
- *         required: false
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Sayfa başına kayıt sayısı
+ *         description: Belirli kategori ID'si
  *       - in: query
  *         name: currentPage
- *         required: false
  *         schema:
  *           type: integer
  *           default: 1
- *         description: Sayfa numarası
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *           default: 10
  *     responses:
  *       200:
- *         description: Kategori(ler) getirildi
+ *         description: Kategoriler getirildi
  *         content:
  *           application/json:
  *             schema:
@@ -45,22 +40,9 @@
  *                         $ref: '#/components/schemas/CategoryResponse'
  *                     pagination:
  *                       type: object
- *                       properties:
- *                         pageSize:
- *                           type: integer
- *                           example: 10
- *                         currentPage:
- *                           type: integer
- *                           example: 1
- *                         total:
- *                           type: integer
- *                           example: 25
- *                         totalPages:
- *                           type: integer
- *                           example: 3
  *
  *   post:
- *     summary: Yeni kategori ekle
+ *     summary: Yeni kategori ve alt kategorileri oluştur
  *     tags: [Categories]
  *     security:
  *       - bearerAuth: []
@@ -69,13 +51,13 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CategoryInput'
+ *             $ref: '#/components/schemas/CategoryWithSubcategoriesInput'
  *     responses:
  *       201:
- *         description: Kategori eklendi
+ *         description: Kategori ve alt kategoriler eklendi
  *
  *   put:
- *     summary: Kategori güncelle
+ *     summary: Kategori ve alt kategorileri güncelle
  *     tags: [Categories]
  *     security:
  *       - bearerAuth: []
@@ -85,19 +67,21 @@
  *         required: true
  *         schema:
  *           type: integer
- *         description: Güncellenecek kategori ID'si
+ *         description: Güncellenecek kategori ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CategoryInput'
+ *             $ref: '#/components/schemas/CategoryWithSubcategoriesUpdateInput'
  *     responses:
  *       200:
- *         description: Kategori güncellendi
+ *         description: Güncelleme başarılı
+ *       400:
+ *         description: Geçersiz veri
  *
  *   delete:
- *     summary: Kategori sil
+ *     summary: Kategori ve alt kategorilerini sil
  *     tags: [Categories]
  *     security:
  *       - bearerAuth: []
@@ -107,14 +91,14 @@
  *         required: true
  *         schema:
  *           type: integer
- *         description: Silinecek kategori ID'si
+ *         description: Silinecek kategori ID
  *     responses:
  *       200:
- *         description: Kategori silindi
+ *         description: Kategori ve alt kategorileri silindi
  *
  * components:
  *   schemas:
- *     CategoryInput:
+ *     CategoryWithSubcategoriesInput:
  *       type: object
  *       required:
  *         - name
@@ -122,27 +106,117 @@
  *       properties:
  *         name:
  *           type: string
- *           example: "Ürün Kategorisi"
+ *           example: "Erkek Giyim"
  *         isactive:
  *           type: boolean
  *           example: true
+ *         subcategories:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/SubcategoryCreateInput'
+ *
+ *     CategoryWithSubcategoriesUpdateInput:
+ *       type: object
+ *       required:
+ *         - name
+ *         - isactive
+ *       properties:
+ *         name:
+ *           type: string
+ *           example: "Erkek Giyim"
+ *         isactive:
+ *           type: boolean
+ *           example: true
+ *         subcategories:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/SubcategoryUpdateInput'
+ *
+ *     SubcategoryCreateInput:
+ *       type: object
+ *       required:
+ *         - title
+ *         - isactive
+ *       properties:
+ *         title:
+ *           type: string
+ *           example: "Tişört"
+ *         isactive:
+ *           type: boolean
+ *           example: true
+ *         files:
+ *           type: array
+ *           description: Alt kategoriye ait dosya URL'leri
+ *           items:
+ *             type: string
+ *           example:
+ *             - "https://example.com/ti-sort1.pdf"
+ *             - "https://example.com/ti-sort2.jpg"
+ *
+ *     SubcategoryUpdateInput:
+ *       type: object
+ *       required:
+ *         - id
+ *         - title
+ *         - isactive
+ *       properties:
+ *         id:
+ *           type: integer
+ *           example: 5
+ *           description: Güncellenecek alt kategori ID
+ *         title:
+ *           type: string
+ *           example: "Tişört"
+ *         isactive:
+ *           type: boolean
+ *           example: true
+ *         files:
+ *           type: array
+ *           description: Alt kategoriye ait dosya URL'leri
+ *           items:
+ *             type: string
+ *           example:
+ *             - "https://example.com/ti-sort1.pdf"
+ *             - "https://example.com/ti-sort2.jpg"
  *
  *     CategoryResponse:
  *       type: object
  *       properties:
  *         id:
  *           type: integer
- *           example: 1
  *         name:
  *           type: string
- *           example: "Ürün Kategorisi"
  *         isactive:
  *           type: boolean
- *           example: true
  *         created_at:
  *           type: string
  *           format: date-time
- *           example: "2025-06-10T12:00:00.000Z"
+ *         subcategories:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/SubcategoryResponse'
+ *
+ *     SubcategoryResponse:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *         title:
+ *           type: string
+ *         category_id:
+ *           type: integer
+ *         isactive:
+ *           type: boolean
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ *         files:
+ *           type: array
+ *           items:
+ *             type: string
+ *           example:
+ *             - "https://example.com/ti-sort1.pdf"
+ *             - "https://example.com/ti-sort2.jpg"
  */
 
 
@@ -152,6 +226,7 @@ import { verifyToken } from "../../../lib/authMiddleware";
 
 const handler = async (req, res) => {
     const id = req.query.id ? parseInt(req.query.id) : null;
+    const sub = req.query.sub === "true";
 
     if (["POST", "PUT", "DELETE"].includes(req.method)) {
         try {
@@ -162,30 +237,180 @@ const handler = async (req, res) => {
     }
 
     try {
+        if (sub) {
+            switch (req.method) {
+                case "GET": {
+                    const currentPage = parseInt(req.query.currentPage || "1");
+                    const pageSize = parseInt(req.query.pageSize || "10");
+                    const offset = (currentPage - 1) * pageSize;
+
+                    const query = db("Subcategories")
+                        .select("Subcategories.*", "Categories.title as category_title")
+                        .join("Categories", "Subcategories.category_id", "Categories.id")
+                        .orderBy("Subcategories.id", "desc")
+                        .offset(offset)
+                        .limit(pageSize);
+
+                    if (id) {
+                        query.where("Subcategories.category_id", id);
+                    }
+
+                    const subcategories = await query;
+                    const subIds = subcategories.map((s) => s.id);
+                    const files = await db("SubcategoryFiles").whereIn("subcategory_id", subIds);
+
+                    const enriched = subcategories.map((sub) => ({
+                        ...sub,
+                        files: files.filter(f => f.subcategory_id === sub.id).map(f => f.file_url)
+                    }));
+
+                    const totalResult = await db("Subcategories").count("id as count").first();
+                    const total = totalResult?.count || 0;
+
+                    return res.status(200).json({
+                        data: enriched,
+                        pagination: {
+                            currentPage,
+                            pageSize,
+                            total,
+                            totalPages: Math.ceil(total / pageSize),
+                        },
+                    });
+                }
+                // POST 
+                case "POST": {
+                    const { name, isactive, subcategories = [] } = req.body;
+
+                    if (!name || typeof isactive !== "boolean") {
+                        return res.status(400).json({ error: "Eksik veya hatalı veri gönderildi." });
+                    }
+
+                    const [categoryId] = await db("Categories")
+                        .insert({ name, isactive })
+                        .returning("id");
+
+                    for (const sub of subcategories) {
+                        if (!sub.title || typeof sub.isactive !== "boolean") continue;
+
+                        const [subId] = await db("Subcategories")
+                            .insert({
+                                category_id: categoryId,
+                                title: sub.title,
+                                isactive: sub.isactive
+                            })
+                            .returning("id");
+
+                        if (Array.isArray(sub.files)) {
+                            const insertFiles = sub.files.map((url) => ({
+                                subcategory_id: subId,
+                                file_url: url
+                            }));
+                            await db("SubcategoryFiles").insert(insertFiles);
+                        }
+                    }
+
+                    return res.status(201).json({ success: true });
+                }
+
+
+                // PUT (category)
+                case "PUT": {
+                    if (!id) return res.status(400).json({ error: "ID gereklidir." });
+
+                    const { name, isactive, subcategories = [] } = req.body;
+
+                    if (!name || typeof isactive !== "boolean") {
+                        return res.status(400).json({ error: "Eksik veya hatalı veri gönderildi." });
+                    }
+
+                    await db("Categories").where({ id }).update({ name, isactive });
+
+                    for (const sub of subcategories) {
+                        if (sub.id) {
+                            await db("Subcategories").where({ id: sub.id }).update({
+                                title: sub.title,
+                                isactive: sub.isactive
+                            });
+
+                            await db("SubcategoryFiles").where({ subcategory_id: sub.id }).del();
+
+                            if (Array.isArray(sub.files)) {
+                                const insertFiles = sub.files.map((url) => ({
+                                    subcategory_id: sub.id,
+                                    file_url: url
+                                }));
+                                await db("SubcategoryFiles").insert(insertFiles);
+                            }
+                        }
+                    }
+
+                    return res.status(200).json({ message: "Kategori güncellendi." });
+                }
+
+                case "DELETE": {
+                    if (!id) return res.status(400).json({ error: "ID gereklidir." });
+
+                    await db("Subcategories").where({ id }).del();
+                    return res.status(200).json({ message: "Alt kategori silindi." });
+                }
+
+                default:
+                    return res.status(405).json({ error: "Yöntem desteklenmiyor." });
+            }
+        }
+
         switch (req.method) {
             case "GET": {
                 const currentPage = parseInt(req.query.currentPage || "1");
                 const pageSize = parseInt(req.query.pageSize || "10");
+                const offset = (currentPage - 1) * pageSize;
 
                 if (id) {
                     const category = await db("Categories").where({ id }).first();
                     if (!category) {
                         return res.status(404).json({ error: "Kategori bulunamadı" });
                     }
-                    return res.status(200).json(category);
+
+                    const subcategories = await db("Subcategories")
+                        .where("category_id", id)
+                        .orderBy("id", "desc");
+
+                    const subIds = subcategories.map((s) => s.id);
+                    const files = await db("SubcategoryFiles").whereIn("subcategory_id", subIds);
+
+                    const enrichedSubs = subcategories.map((sub) => ({
+                        ...sub,
+                        files: files.filter(f => f.subcategory_id === sub.id).map(f => f.file_url)
+                    }));
+
+                    return res.status(200).json({ ...category, subcategories: enrichedSubs });
                 }
 
-                const offset = (currentPage - 1) * pageSize;
                 const categories = await db("Categories")
                     .orderBy("id", "desc")
                     .offset(offset)
                     .limit(pageSize);
 
+                const categoryIds = categories.map((c) => c.id);
+                const subcategories = await db("Subcategories").whereIn("category_id", categoryIds);
+                const subIds = subcategories.map((s) => s.id);
+                const files = await db("SubcategoryFiles").whereIn("subcategory_id", subIds);
+
+                const enrichedSubs = subcategories.map((sub) => ({
+                    ...sub,
+                    files: files.filter((f) => f.subcategory_id === sub.id).map((f) => f.file_url)
+                }));
+
+                const categoryList = categories.map((category) => ({
+                    ...category,
+                    subcategories: enrichedSubs.filter((sub) => sub.category_id === category.id)
+                }));
+
                 const totalResult = await db("Categories").count("id as count").first();
                 const total = totalResult?.count || 0;
 
                 return res.status(200).json({
-                    data: categories,
+                    data: categoryList,
                     pagination: {
                         currentPage,
                         pageSize,
@@ -195,42 +420,115 @@ const handler = async (req, res) => {
                 });
             }
 
-            case "POST": {
-                const { name, isactive } = req.body;
+         case "POST": {
+    const { name, isactive, subcategories = [] } = req.body;
 
-                if (!name || typeof isactive !== "boolean") {
-                    return res.status(400).json({ error: "Eksik veya hatalı veri gönderildi." });
-                }
+    if (!name || typeof isactive !== "boolean") {
+        return res.status(400).json({ error: "Eksik veya hatalı veri gönderildi." });
+    }
 
-                try {
-                    await db("Categories").insert({ name, isactive });
+    try {
+        await db.transaction(async (trx) => {
+            // Ana kategori ekleniyor
+            const rawCategory = await trx.raw(
+                `INSERT INTO Categories (name, isactive)
+                 OUTPUT INSERTED.id
+                 VALUES (?, ?)`,
+                [name, isactive]
+            );
 
-                    return res.status(201).json({ success: true });
-                } catch (err) {
-                    console.error("[POST /categories]", err);
-                    return res.status(500).json({ error: "POST failed", details: err.message });
+            const categoryId = rawCategory?.[0]?.id;
+            if (!categoryId) throw new Error("Kategori ID alınamadı.");
+
+            // Alt kategoriler ekleniyor
+            for (const sub of subcategories) {
+                if (!sub.title || typeof sub.isactive !== "boolean") continue;
+
+                const rawSub = await trx.raw(
+                    `INSERT INTO Subcategories (category_id, title, isactive)
+                     OUTPUT INSERTED.id
+                     VALUES (?, ?, ?)`,
+                    [categoryId, sub.title, sub.isactive]
+                );
+
+                const subId = rawSub?.[0]?.id;
+                if (!subId) throw new Error("Alt kategori ID alınamadı.");
+
+                // Alt kategoriye ait dosya URL'leri varsa
+                if (Array.isArray(sub.files) && sub.files.length > 0) {
+                    const insertFiles = sub.files.map((url) => ({
+                        subcategory_id: subId,
+                        file_url: url
+                    }));
+
+                    await trx("SubcategoryFiles").insert(insertFiles);
                 }
             }
+        });
 
-            case "PUT": {
-                if (!id) return res.status(400).json({ error: "ID gereklidir." });
+        return res.status(201).json({ success: true });
+    } catch (err) {
+        console.error("Kategori oluşturma hatası:", err);
+        return res.status(500).json({ error: "Kategori oluşturulurken hata oluştu", details: err.message });
+    }
+}
 
-                const { name, isactive } = req.body;
+case "PUT": {
+    if (!id) return res.status(400).json({ error: "ID gereklidir." });
 
-                if (!name || typeof isactive !== "boolean") {
-                    return res.status(400).json({ error: "Eksik veya hatalı veri gönderildi." });
+    const { name, isactive, subcategories = [] } = req.body;
+
+    if (!name || typeof isactive !== "boolean") {
+        return res.status(400).json({ error: "Eksik veya hatalı veri gönderildi." });
+    }
+
+    try {
+        await db.transaction(async (trx) => {
+            await trx("Categories").where({ id }).update({ name, isactive });
+
+            for (const sub of subcategories) {
+                if (sub.id) {
+                    const existingSub = await trx("Subcategories").where({ id: sub.id }).first();
+
+                    if (!existingSub) {
+                        throw new Error(`Alt kategori bulunamadı: ID ${sub.id}`);
+                    }
+
+                    await trx("Subcategories").where({ id: sub.id }).update({
+                        title: sub.title,
+                        isactive: sub.isactive
+                    });
+
+                    // Önce eski dosyaları sil
+                    await trx("SubcategoryFiles").where({ subcategory_id: sub.id }).del();
+
+                    // Yeni dosyaları ekle
+                    if (Array.isArray(sub.files) && sub.files.length > 0) {
+                        const insertFiles = sub.files.map((url) => ({
+                            subcategory_id: sub.id,
+                            file_url: url
+                        }));
+                        await trx("SubcategoryFiles").insert(insertFiles);
+                    }
                 }
-
-                await db("Categories").where({ id }).update({ name, isactive });
-
-                return res.status(200).json({ message: "Kategori güncellendi." });
             }
+        });
+
+        return res.status(200).json({ message: "Kategori güncellendi." });
+    } catch (err) {
+        console.error("PUT hata:", err);
+        return res.status(500).json({
+            error: "Kategori güncellenirken hata oluştu",
+            details: err.message
+        });
+    }
+}
+
 
             case "DELETE": {
                 if (!id) return res.status(400).json({ error: "ID gereklidir." });
 
                 await db("Categories").where({ id }).del();
-
                 return res.status(200).json({ message: "Kategori silindi." });
             }
 
@@ -239,7 +537,10 @@ const handler = async (req, res) => {
         }
     } catch (error) {
         console.error(`[${req.method} /categories]`, error);
-        return res.status(500).json({ error: `${req.method} işlemi başarısız`, details: error.message });
+        return res.status(500).json({
+            error: `${req.method} işlemi başarısız`,
+            details: error.message,
+        });
     }
 };
 

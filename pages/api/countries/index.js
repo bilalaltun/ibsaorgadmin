@@ -201,178 +201,210 @@
  *           example: 2
  */
 
-
 import db from "../../../lib/db";
 import { withCors } from "../../../lib/withCors";
 import { verifyToken } from "../../../lib/authMiddleware";
 
 const handler = async (req, res) => {
   const id = req.query.id ? parseInt(req.query.id) : null;
+  const sub = req.query.sub === "true";
 
   if (["POST", "PUT", "DELETE"].includes(req.method)) {
     try {
-      await verifyToken(req);
+      verifyToken(req);
     } catch (err) {
       return res.status(401).json({ error: err.message });
     }
   }
 
-// GET
-if (req.method === "GET") {
   try {
-    const { pageSize = 10, currentPage = 1, region_id } = req.query;
-    const pageInt = parseInt(pageSize);
-    const currentPageInt = parseInt(currentPage);
+    // SUBCATEGORY İŞLEMLERİ
+    if (sub) {
+      switch (req.method) {
+        case "GET": {
+          const currentPage = parseInt(req.query.currentPage || "1");
+          const pageSize = parseInt(req.query.pageSize || "10");
+          const offset = (currentPage - 1) * pageSize;
 
-    // Tekil ülke
-    if (id) {
-      const country = await db("Countries")
-        .leftJoin("Regions", "Countries.region_id", "Regions.id")
-        .select("Countries.*", "Regions.name as region_name")
-        .where("Countries.id", id)
-        .first();
+          const query = db("Subcategories")
+            .select("Subcategories.*", "Categories.title as category_title")
+            .join("Categories", "Subcategories.category_id", "Categories.id")
+            .orderBy("Subcategories.id", "desc")
+            .offset(offset)
+            .limit(pageSize);
 
-      if (!country) return res.status(404).json({ error: "Ülke bulunamadı" });
-      return res.status(200).json(country);
+          if (id) {
+            query.where("Subcategories.category_id", id);
+          }
+
+          const subcategories = await query;
+          const totalResult = await db("Subcategories").count("id as count").first();
+          const total = totalResult?.count || 0;
+
+          return res.status(200).json({
+            data: subcategories,
+            pagination: {
+              currentPage,
+              pageSize,
+              total,
+              totalPages: Math.ceil(total / pageSize),
+            },
+          });
+        }
+
+        case "POST": {
+          const { category_id, title, file_url, isactive } = req.body;
+
+          if (!category_id || !title || typeof isactive !== "boolean") {
+            return res.status(400).json({ error: "Eksik veya hatalı veri gönderildi." });
+          }
+
+          await db("Subcategories").insert({ category_id, title, file_url, isactive });
+          return res.status(201).json({ success: true });
+        }
+
+        case "PUT": {
+          if (!id) return res.status(400).json({ error: "ID gereklidir." });
+          const { title, file_url, isactive } = req.body;
+
+          if (!title || typeof isactive !== "boolean") {
+            return res.status(400).json({ error: "Eksik veya hatalı veri gönderildi." });
+          }
+
+          await db("Subcategories").where({ id }).update({ title, file_url, isactive });
+          return res.status(200).json({ message: "Alt kategori güncellendi." });
+        }
+
+        case "DELETE": {
+          if (!id) return res.status(400).json({ error: "ID gereklidir." });
+
+          await db("Subcategories").where({ id }).del();
+          return res.status(200).json({ message: "Alt kategori silindi." });
+        }
+
+        default:
+          return res.status(405).json({ error: "Yöntem desteklenmiyor." });
+      }
     }
 
-    // Listeleme + filtre
-    const query = db("Countries")
-      .leftJoin("Regions", "Countries.region_id", "Regions.id")
-      .select("Countries.*", "Regions.name as region_name");
+    // GET 
+    switch (req.method) {
+      case "GET": {
+        const currentPage = parseInt(req.query.currentPage || "1");
+        const pageSize = parseInt(req.query.pageSize || "10");
 
-    if (region_id) {
-      query.where("Countries.region_id", parseInt(region_id));
-    }
+        if (id) {
+          const category = await db("Categories").where({ id }).first();
+          if (!category) {
+            return res.status(404).json({ error: "Kategori bulunamadı" });
+          }
 
-    // MSSQL uyumlu: count ayrı sorguda yapılır
-    const totalQuery = db("Countries");
-    if (region_id) {
-      totalQuery.where("region_id", parseInt(region_id));
-    }
+          const subcategories = await db("Subcategories")
+            .where("category_id", id)
+            .orderBy("id", "desc");
 
-    const totalResult = await totalQuery.count("* as count").first();
-    const totalCount = totalResult?.count || 0;
-    const totalPages = Math.ceil(totalCount / pageInt);
+          return res.status(200).json({ ...category, subcategories });
+        }
 
-    const countries = await query
-      .orderBy("Countries.id", "desc")
-      .limit(pageInt)
-      .offset((currentPageInt - 1) * pageInt);
+        const offset = (currentPage - 1) * pageSize;
+        const categories = await db("Categories")
+          .orderBy("id", "desc")
+          .offset(offset)
+          .limit(pageSize);
 
-    return res.status(200).json({
-      data: countries,
-      pagination: {
-        pageSize: pageInt,
-        currentPage: currentPageInt,
-        total: totalCount,
-        totalPages,
-      },
-      filters: {
-        ...(region_id && { region_id: parseInt(region_id) }),
-      },
-    });
-  } catch (err) {
-    console.error("[GET /countries]", err);
-    return res.status(500).json({ error: "GET failed", details: err.message });
-  }
-}
+        const ids = categories.map((c) => c.id);
+        const subMap = await db("Subcategories")
+          .whereIn("category_id", ids)
+          .orderBy("id", "desc");
 
+        const categoryList = categories.map((cat) => ({
+          ...cat,
+          subcategories: subMap.filter((sub) => sub.category_id === cat.id),
+        }));
 
-  // POST
-  else if (req.method === "POST") {
-    const {
-      name,
-      federation_name,
-      directory,
-      address,
-      phone,
-      email,
-      isactive,
-      flag_url,
-      region_id,
-    } = req.body;
+        const totalResult = await db("Categories").count("id as count").first();
+        const total = totalResult?.count || 0;
 
-    if (!name || !federation_name || isactive === undefined) {
-      return res.status(400).json({ error: "Zorunlu alanlar eksik" });
-    }
-
-    try {
-      await db("Countries").insert({
-        name,
-        federation_name,
-        directory,
-        address,
-        phone,
-        email,
-        isactive,
-        flag_url,
-        region_id: region_id || null,
-        created_at: new Date(),
-      });
-
-      return res.status(201).json({ success: true });
-    } catch (err) {
-      console.error("[POST /countries]", err);
-      return res.status(500).json({ error: "POST failed", details: err.message });
-    }
-  }
-
-  // PUT
-  else if (req.method === "PUT") {
-    if (!id) return res.status(400).json({ error: "ID gerekli" });
-
-    const {
-      name,
-      federation_name,
-      directory,
-      address,
-      phone,
-      email,
-      isactive,
-      flag_url,
-      region_id,
-    } = req.body;
-
-    try {
-      await db("Countries")
-        .where({ id })
-        .update({
-          name,
-          federation_name,
-          directory,
-          address,
-          phone,
-          email,
-          isactive,
-          flag_url,
-          region_id: region_id || null,
-          updated_at: new Date(),
+        return res.status(200).json({
+          data: categoryList,
+          pagination: {
+            currentPage,
+            pageSize,
+            total,
+            totalPages: Math.ceil(total / pageSize),
+          },
         });
+      }
+// POST
+      case "POST": {
+        const { title, isactive, subcategories = [] } = req.body;
 
-      return res.status(200).json({ success: true });
-    } catch (err) {
-      console.error("[PUT /countries]", err);
-      return res.status(500).json({ error: "PUT failed", details: err.message });
+        if (!title || typeof isactive !== "boolean") {
+          return res.status(400).json({ error: "Eksik veya hatalı veri gönderildi." });
+        }
+
+        const [categoryId] = await db("Categories").insert({ title, isactive }).returning("id");
+
+        if (subcategories.length > 0) {
+          const inserts = subcategories.map((sub) => ({
+            category_id: categoryId,
+            title: sub.title,
+            file_url: sub.file_url || null,
+            isactive: typeof sub.isactive === "boolean" ? sub.isactive : true,
+          }));
+          await db("Subcategories").insert(inserts);
+        }
+
+        return res.status(201).json({ success: true });
+      }
+
+      // PUT
+      case "PUT": {
+        if (!id) return res.status(400).json({ error: "ID gereklidir." });
+
+        const { title, isactive, subcategories = [] } = req.body;
+
+        if (!title || typeof isactive !== "boolean") {
+          return res.status(400).json({ error: "Eksik veya hatalı veri gönderildi." });
+        }
+
+        await db("Categories").where({ id }).update({ title, isactive });
+
+        for (const sub of subcategories) {
+          if (sub.id) {
+            await db("Subcategories").where({ id: sub.id }).update({
+              title: sub.title,
+              file_url: sub.file_url,
+              isactive: sub.isactive,
+            });
+          } else {
+            await db("Subcategories").insert({
+              category_id: id,
+              title: sub.title,
+              file_url: sub.file_url || null,
+              isactive: typeof sub.isactive === "boolean" ? sub.isactive : true,
+            });
+          }
+        }
+
+        return res.status(200).json({ message: "Kategori ve alt kategoriler güncellendi." });
+      }
+
+      // DELETE
+      case "DELETE": {
+        if (!id) return res.status(400).json({ error: "ID gereklidir." });
+
+        await db("Categories").where({ id }).del();
+
+        return res.status(200).json({ message: "Kategori ve alt kategoriler silindi." });
+      }
+
+      default:
+        return res.status(405).json({ error: "Yöntem desteklenmiyor." });
     }
-  }
-
-  // DELETE
-  else if (req.method === "DELETE") {
-    if (!id) return res.status(400).json({ error: "ID gerekli" });
-
-    try {
-      await db("Countries").where({ id }).del();
-      return res.status(200).json({ success: true });
-    } catch (err) {
-      console.error("[DELETE /countries]", err);
-      return res.status(500).json({ error: "DELETE failed", details: err.message });
-    }
-  }
-
-  // Unsupported
-  else {
-    res.status(405).json({ error: "Method not allowed" });
+  } catch (error) {
+    console.error(`[${req.method} /categories]`, error);
+    return res.status(500).json({ error: `${req.method} işlemi başarısız`, details: error.message });
   }
 };
 
