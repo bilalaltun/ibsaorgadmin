@@ -6,7 +6,7 @@
  *
  * /api/countries:
  *   get:
- *     summary: Ülkeleri getir (tüm liste, ID ile detay veya sayfalı)
+ *     summary: Ülkeleri getir (tüm liste, ID ile detay veya filtreli)
  *     tags: [Countries]
  *     parameters:
  *       - in: query
@@ -15,6 +15,13 @@
  *         schema:
  *           type: integer
  *         description: Ülke ID'si (verilirse sadece o ülke döner)
+ *       - in: query
+ *         name: continent
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [Asia, Europe, Africa, North America, South America, Australia, Antarctica]
+ *         description: Kıta adına göre filtreleme
  *       - in: query
  *         name: pageSize
  *         required: false
@@ -35,25 +42,33 @@
  *         content:
  *           application/json:
  *             schema:
- *               oneOf:
- *                 - $ref: '#/components/schemas/Country'
- *                 - type: object
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Country'
+ *                 pagination:
+ *                   type: object
  *                   properties:
- *                     data:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/Country'
- *                     pagination:
- *                       type: object
- *                       properties:
- *                         currentPage:
- *                           type: integer
- *                         pageSize:
- *                           type: integer
- *                         total:
- *                           type: integer
- *                         totalPages:
- *                           type: integer
+ *                     currentPage:
+ *                       type: integer
+ *                       example: 1
+ *                     pageSize:
+ *                       type: integer
+ *                       example: 10
+ *                     total:
+ *                       type: integer
+ *                       example: 25
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 3
+ *                 filters:
+ *                   type: object
+ *                   properties:
+ *                     continent:
+ *                       type: string
+ *                       example: "Europe"
  *
  *   post:
  *     summary: Yeni ülke ekle
@@ -215,44 +230,55 @@ const handler = async (req, res) => {
       return res.status(401).json({ error: err.message });
     }
   }
+if (req.method === "GET") {
+  try {
+    const { pageSize = 10, currentPage = 1, continent, id } = req.query;
+    const pageInt = parseInt(pageSize);
+    const currentPageInt = parseInt(currentPage);
 
-  // GET
-  if (req.method === "GET") {
-    try {
-      const { pageSize = 10, currentPage = 1 } = req.query;
-      const pageInt = parseInt(pageSize);
-      const currentPageInt = parseInt(currentPage);
-
-      if (id) {
-        const country = await db("Countries").where({ id }).first();
-        if (!country) return res.status(404).json({ error: "Ülke bulunamadı" });
-
-        return res.status(200).json(country);
-      }
-
-      const total = await db("Countries").count("* as count").first();
-      const totalCount = total?.count || 0;
-      const totalPages = Math.ceil(totalCount / pageInt);
-
-      const countries = await db("Countries")
-        .orderBy("id", "desc")
-        .limit(pageInt)
-        .offset((currentPageInt - 1) * pageInt);
-
-      return res.status(200).json({
-        data: countries,
-        pagination: {
-          pageSize: pageInt,
-          currentPage: currentPageInt,
-          total: totalCount,
-          totalPages,
-        },
-      });
-    } catch (err) {
-      console.error("[GET /countries]", err);
-      res.status(500).json({ error: "GET failed", details: err.message });
+    // Tekil ülke getir
+    if (id) {
+      const country = await db("Countries").where({ id }).first();
+      if (!country) return res.status(404).json({ error: "Ülke bulunamadı" });
+      return res.status(200).json(country);
     }
+
+    // Sorgu başlangıcı
+    const query = db("Countries").where(function () {
+      if (continent) {
+        this.where("continent", continent);
+      }
+    });
+
+    // Toplam kayıt
+    const total = await query.clone().count("* as count").first();
+    const totalCount = total?.count || 0;
+    const totalPages = Math.ceil(totalCount / pageInt);
+
+    // Sayfalı veri çek
+    const countries = await query
+      .clone()
+      .orderBy("id", "desc")
+      .limit(pageInt)
+      .offset((currentPageInt - 1) * pageInt);
+
+    return res.status(200).json({
+      data: countries,
+      pagination: {
+        pageSize: pageInt,
+        currentPage: currentPageInt,
+        total: totalCount,
+        totalPages,
+      },
+      filters: {
+        ...(continent && { continent }),
+      },
+    });
+  } catch (err) {
+    console.error("[GET /countries]", err);
+    res.status(500).json({ error: "GET failed", details: err.message });
   }
+}
 
   // POST
   else if (req.method === "POST") {
