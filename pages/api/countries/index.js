@@ -16,12 +16,11 @@
  *           type: integer
  *         description: Ülke ID'si (verilirse sadece o ülke döner)
  *       - in: query
- *         name: continent
+ *         name: region_id
  *         required: false
  *         schema:
- *           type: string
- *           enum: [Asia, Europe, Africa, North America, South America, Australia, Antarctica]
- *         description: Kıta adına göre filtreleme
+ *           type: integer
+ *         description: Bölgeye göre filtreleme (region_id)
  *       - in: query
  *         name: pageSize
  *         required: false
@@ -66,9 +65,9 @@
  *                 filters:
  *                   type: object
  *                   properties:
- *                     continent:
- *                       type: string
- *                       example: "Europe"
+ *                     region_id:
+ *                       type: integer
+ *                       example: 2
  *
  *   post:
  *     summary: Yeni ülke ekle
@@ -155,17 +154,12 @@
  *         flag_url:
  *           type: string
  *           example: "/flags/az.png"
- *         continent:
+ *         region_id:
+ *           type: integer
+ *           example: 2
+ *         region_name:
  *           type: string
- *           enum:
- *             - Asia
- *             - Europe
- *             - Africa
- *             - North America
- *             - South America
- *             - Australia
- *             - Antarctica
- *           example: "Asia"
+ *           example: "Europe"
  *         created_at:
  *           type: string
  *           format: date-time
@@ -202,17 +196,9 @@
  *         flag_url:
  *           type: string
  *           example: "/flags/az.png"
- *         continent:
- *           type: string
- *           enum:
- *             - Asia
- *             - Europe
- *             - Africa
- *             - North America
- *             - South America
- *             - Australia
- *             - Antarctica
- *           example: "Asia"
+ *         region_id:
+ *           type: integer
+ *           example: 2
  */
 
 
@@ -225,40 +211,52 @@ const handler = async (req, res) => {
 
   if (["POST", "PUT", "DELETE"].includes(req.method)) {
     try {
-      verifyToken(req);
+      await verifyToken(req);
     } catch (err) {
       return res.status(401).json({ error: err.message });
     }
   }
+
+// GET
 if (req.method === "GET") {
   try {
-    const { pageSize = 10, currentPage = 1, continent, id } = req.query;
+    const { pageSize = 10, currentPage = 1, region_id } = req.query;
     const pageInt = parseInt(pageSize);
     const currentPageInt = parseInt(currentPage);
 
-    // Tekil ülke getir
+    // Tekil ülke
     if (id) {
-      const country = await db("Countries").where({ id }).first();
+      const country = await db("Countries")
+        .leftJoin("Regions", "Countries.region_id", "Regions.id")
+        .select("Countries.*", "Regions.name as region_name")
+        .where("Countries.id", id)
+        .first();
+
       if (!country) return res.status(404).json({ error: "Ülke bulunamadı" });
       return res.status(200).json(country);
     }
 
-    // Sorgu başlangıcı
-    const query = db("Countries").where(function () {
-      if (continent) {
-        this.where("continent", continent);
-      }
-    });
+    // Listeleme + filtre
+    const query = db("Countries")
+      .leftJoin("Regions", "Countries.region_id", "Regions.id")
+      .select("Countries.*", "Regions.name as region_name");
 
-    // Toplam kayıt
-    const total = await query.clone().count("* as count").first();
-    const totalCount = total?.count || 0;
+    if (region_id) {
+      query.where("Countries.region_id", parseInt(region_id));
+    }
+
+    // MSSQL uyumlu: count ayrı sorguda yapılır
+    const totalQuery = db("Countries");
+    if (region_id) {
+      totalQuery.where("region_id", parseInt(region_id));
+    }
+
+    const totalResult = await totalQuery.count("* as count").first();
+    const totalCount = totalResult?.count || 0;
     const totalPages = Math.ceil(totalCount / pageInt);
 
-    // Sayfalı veri çek
     const countries = await query
-      .clone()
-      .orderBy("id", "desc")
+      .orderBy("Countries.id", "desc")
       .limit(pageInt)
       .offset((currentPageInt - 1) * pageInt);
 
@@ -271,14 +269,15 @@ if (req.method === "GET") {
         totalPages,
       },
       filters: {
-        ...(continent && { continent }),
+        ...(region_id && { region_id: parseInt(region_id) }),
       },
     });
   } catch (err) {
     console.error("[GET /countries]", err);
-    res.status(500).json({ error: "GET failed", details: err.message });
+    return res.status(500).json({ error: "GET failed", details: err.message });
   }
 }
+
 
   // POST
   else if (req.method === "POST") {
@@ -289,10 +288,14 @@ if (req.method === "GET") {
       address,
       phone,
       email,
-      continent,
       isactive,
       flag_url,
+      region_id,
     } = req.body;
+
+    if (!name || !federation_name || isactive === undefined) {
+      return res.status(400).json({ error: "Zorunlu alanlar eksik" });
+    }
 
     try {
       await db("Countries").insert({
@@ -301,17 +304,17 @@ if (req.method === "GET") {
         directory,
         address,
         phone,
-        continent,
         email,
         isactive,
         flag_url,
+        region_id: region_id || null,
         created_at: new Date(),
       });
 
-      res.status(201).json({ success: true });
+      return res.status(201).json({ success: true });
     } catch (err) {
       console.error("[POST /countries]", err);
-      res.status(500).json({ error: "POST failed", details: err.message });
+      return res.status(500).json({ error: "POST failed", details: err.message });
     }
   }
 
@@ -325,10 +328,10 @@ if (req.method === "GET") {
       directory,
       address,
       phone,
-      continent,
       email,
       isactive,
       flag_url,
+      region_id,
     } = req.body;
 
     try {
@@ -339,17 +342,18 @@ if (req.method === "GET") {
           federation_name,
           directory,
           address,
-          continent,
           phone,
           email,
           isactive,
           flag_url,
+          region_id: region_id || null,
+          updated_at: new Date(),
         });
 
-      res.status(200).json({ success: true });
+      return res.status(200).json({ success: true });
     } catch (err) {
       console.error("[PUT /countries]", err);
-      res.status(500).json({ error: "PUT failed", details: err.message });
+      return res.status(500).json({ error: "PUT failed", details: err.message });
     }
   }
 
@@ -359,10 +363,10 @@ if (req.method === "GET") {
 
     try {
       await db("Countries").where({ id }).del();
-      res.status(200).json({ success: true });
+      return res.status(200).json({ success: true });
     } catch (err) {
       console.error("[DELETE /countries]", err);
-      res.status(500).json({ error: "DELETE failed", details: err.message });
+      return res.status(500).json({ error: "DELETE failed", details: err.message });
     }
   }
 

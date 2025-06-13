@@ -41,6 +41,8 @@ const options = {
     path.resolve('./pages/api/products/index.js'),
     path.resolve('./pages/api/pages/index.js'),
     path.resolve('./pages/api/references/index.js'),
+    path.resolve('./pages/api/regions/index.js'),
+    path.resolve('./pages/api/region-members/index.js'),
     path.resolve('./pages/api/roles/index.js'),
     path.resolve('./pages/api/role-and-downloads/index.js'),
     path.resolve('./pages/api/sitesettings/index.js'),
