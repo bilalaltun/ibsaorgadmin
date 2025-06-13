@@ -140,6 +140,17 @@
  *         flag_url:
  *           type: string
  *           example: "/flags/az.png"
+ *         continent:
+ *           type: string
+ *           enum:
+ *             - Asia
+ *             - Europe
+ *             - Africa
+ *             - North America
+ *             - South America
+ *             - Australia
+ *             - Antarctica
+ *           example: "Asia"
  *         created_at:
  *           type: string
  *           format: date-time
@@ -176,7 +187,19 @@
  *         flag_url:
  *           type: string
  *           example: "/flags/az.png"
+ *         continent:
+ *           type: string
+ *           enum:
+ *             - Asia
+ *             - Europe
+ *             - Africa
+ *             - North America
+ *             - South America
+ *             - Australia
+ *             - Antarctica
+ *           example: "Asia"
  */
+
 
 import db from "../../../lib/db";
 import { withCors } from "../../../lib/withCors";
@@ -187,7 +210,7 @@ const handler = async (req, res) => {
 
   if (["POST", "PUT", "DELETE"].includes(req.method)) {
     try {
-      verifyToken(req); // Yetkilendirme kontrolü
+      verifyToken(req);
     } catch (err) {
       return res.status(401).json({ error: err.message });
     }
@@ -240,6 +263,7 @@ const handler = async (req, res) => {
       address,
       phone,
       email,
+      continent,
       isactive,
       flag_url,
     } = req.body;
@@ -251,6 +275,7 @@ const handler = async (req, res) => {
         directory,
         address,
         phone,
+        continent,
         email,
         isactive,
         flag_url,
@@ -274,6 +299,7 @@ const handler = async (req, res) => {
       directory,
       address,
       phone,
+      continent,
       email,
       isactive,
       flag_url,
@@ -287,6 +313,7 @@ const handler = async (req, res) => {
           federation_name,
           directory,
           address,
+          continent,
           phone,
           email,
           isactive,
