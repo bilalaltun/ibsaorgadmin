@@ -78,17 +78,31 @@ export default function UploadField({
   const processImage = async (file, localUrl = null) => {
     setIsUploading(true);
     setError("");
+
     if (localUrl) setPreviewUrl(localUrl);
     else setPreviewUrl(URL.createObjectURL(file));
 
     if (type === "image") {
       try {
-        const compressed = await imageCompression(file, {
+        const compressedBlob = await imageCompression(file, {
           maxSizeMB: 1,
-          maxWidthOrHeight: 1024,
+          maxWidthOrHeight: 6000,
           useWebWorker: true,
         });
-        file = compressed;
+
+        // 🧠 Dosya adını koru (ya da fallback)
+        const originalName =
+          file.name && file.name.includes(".")
+            ? file.name
+            : `upload.${file.type?.split("/")[1] || "jpg"}`;
+
+        const renamedFile = new File([compressedBlob], originalName, {
+          type: compressedBlob.type || file.type || "image/jpeg",
+        });
+
+        file = renamedFile;
+
+        console.log("✅ Gerçek filename:", file.name, file.type);
       } catch (err) {
         console.error("Compress error:", err);
         setError("⚠ Görsel sıkıştırılamadı.");

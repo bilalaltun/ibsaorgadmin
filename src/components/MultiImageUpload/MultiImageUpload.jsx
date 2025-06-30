@@ -7,46 +7,51 @@ import imageCompression from "browser-image-compression"; // 📌 Yeni ekleme
 export default function MultiImageUploader({ value = [], onChange }) {
   const [uploadingIndex, setUploadingIndex] = useState(null);
 
-  const handleFiles = async (event) => {
-    const files = Array.from(event.target.files);
-    if (!files.length) return;
+const handleFiles = async (event) => {
+  const originalFiles = Array.from(event.target.files);
+  if (!originalFiles.length) return;
 
-    for (let i = 0; i < files.length; i++) {
-      setUploadingIndex(i);
+  setUploadingIndex(0);
 
-      let file = files[i];
-
-      try {
-        // 🔻 Görsel sıkıştır
-        const compressed = await imageCompression(file, {
+  try {
+    const compressedFiles = await Promise.all(
+      originalFiles.map(async (file) => {
+        const compressedBlob = await imageCompression(file, {
           maxSizeMB: 1,
           maxWidthOrHeight: 1024,
           useWebWorker: true,
         });
-        file = compressed;
 
-        const formData = new FormData();
-        formData.append("file", file);
+        // Blob'u orijinal dosya adı ve tipi ile yeni bir File nesnesine dönüştür
+        return new File([compressedBlob], file.name, { type: file.type });
+      })
+    );
 
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
+    const formData = new FormData();
+    compressedFiles.forEach((file) => formData.append("file", file));
 
-        if (!res.ok) throw new Error("Yükleme başarısız");
+    const res = await fetch("/api/multi-upload", {
+      method: "POST",
+      body: formData,
+    });
 
-        const { url } = await res.json();
-        onChange((prevImages) => {
-          return Array.isArray(prevImages) ? [...prevImages, url] : [url];
-        });
-      } catch (err) {
-        console.error("Yükleme hatası:", err);
-        alert(`"${files[i].name}" yüklenemedi.`);
-      }
-    }
+    if (!res.ok) throw new Error("Yükleme başarısız");
 
-    setUploadingIndex(null);
-  };
+    const data = await res.json();
+    const newUrls = data.urls || [];
+
+    onChange((prevImages) => [
+      ...(Array.isArray(prevImages) ? prevImages : []),
+      ...newUrls,
+    ]);
+  } catch (err) {
+    console.error("Yükleme hatası:", err);
+    alert("Bazı dosyalar yüklenemedi.");
+  }
+
+  setUploadingIndex(null);
+};
+
 
   const removeImage = (index) => {
     const updated = Array.isArray(value) ? [...value] : [];

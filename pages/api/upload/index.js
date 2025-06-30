@@ -1,23 +1,12 @@
-import { readFile } from "fs/promises";
-import { initializeApp } from "firebase/app";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { parseForm } from "../../../lib/fileHandler";
+import FormData from "form-data";
+import fs from "fs";
+
 export const config = {
   api: {
     bodyParser: false,
   },
 };
-const firebaseConfig = {
-  apiKey: "AIzaSyAGGp81BmXQBvjhD9l2b13xGo_BAFuJORQ",
-  authDomain: "mizrak-makine.firebaseapp.com",
-  projectId: "mizrak-makine",
-  storageBucket: "mizrak-makine.firebasestorage.app",
-  messagingSenderId: "470337058324",
-  appId: "1:470337058324:web:d6236268e1a74886bb5901",
-  measurementId: "G-X79V1SMNRJ"
-};
-const app = initializeApp(firebaseConfig);
-const storage = getStorage(app);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -27,6 +16,7 @@ export default async function handler(req, res) {
   try {
     const { files } = await parseForm(req);
     let file = files.file;
+
     if (Array.isArray(file)) file = file[0];
     if (!file || !file.filepath) {
       return res
@@ -34,16 +24,49 @@ export default async function handler(req, res) {
         .json({ error: "No file uploaded or invalid file" });
     }
 
-    const { filepath, originalFilename } = file;
-    let buffer = await readFile(filepath);
-    const fileName = `${Date.now()}-${originalFilename}`;
-    const storageRef = ref(storage, `uploads/${fileName}`);
-    await uploadBytes(storageRef, buffer);
-    const url = await getDownloadURL(storageRef);
+    const form = new FormData();
+    const fileStream = fs.createReadStream(file.filepath);
+    console.log(fileStream);
+    // 🔥 Dosya adı ve türü belirtilmeli!
+    form.append("files", fileStream, {
+      filename: file.originalFilename || "upload.jpg",
+      contentType: file.mimetype || "application/octet-stream",
+    });
+    console.log(form);
+    const fetch = (...args) =>
+      import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
-    return res.status(200).json({ url });
+    const response = await fetch(
+      "https://aifdijital.com/api/File/ibsa/upload",
+      {
+        method: "POST",
+        headers: {
+          ...form.getHeaders(),
+          accept: "application/json",
+        },
+        body: form,
+      }
+    );
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Upload failed: ${errText}`);
+    }
+
+    const responseData = await response.json();
+    const uploadedFile = responseData?.[0];
+
+    if (!uploadedFile || !uploadedFile.pathOrContainerName) {
+      return res
+        .status(500)
+        .json({ error: "Upload succeeded but path not returned" });
+    }
+
+    return res.status(200).json({
+      url: `https://aifdijital.com/${uploadedFile.pathOrContainerName}`,
+    });
   } catch (error) {
-    console.error("🔥 Upload Error:", error);
-    return res.status(500).json({ error: error.message });
+    console.error("🔥 Upload Error:", error?.message || error);
+    return res.status(500).json({ error: error?.message || "Upload failed" });
   }
 }
