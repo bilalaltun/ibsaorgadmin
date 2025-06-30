@@ -2,7 +2,7 @@
  * @swagger
  * /api/dashboard/weather:
  *   get:
- *     summary: Bursa'nın güncel hava durumu verilerini getirir
+ *     summary: Bakü'nün güncel hava durumu verilerini getirir
  *     tags:
  *       - Dashboard
  *     responses:
@@ -16,19 +16,19 @@
  *                 temperature:
  *                   type: number
  *                   description: Sıcaklık (°C)
- *                   example: 22.5
+ *                   example: 28.3
  *                 windspeed:
  *                   type: number
  *                   description: Rüzgar hızı (km/s)
- *                   example: 15.3
+ *                   example: 12.1
  *                 weathercode:
  *                   type: integer
  *                   description: Hava durumu kodu
- *                   example: 3
+ *                   example: 1
  *                 time:
  *                   type: string
  *                   description: Veri zamanı (ISO 8601 formatında)
- *                   example: "2025-06-02T10:00"
+ *                   example: "2025-06-22T14:00"
  *       500:
  *         description: Sunucu hatası
  */
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     try {
       const response = await fetch(
-        "https://api.open-meteo.com/v1/forecast?latitude=40.7655&longitude=29.9406&current_weather=true&timezone=Europe/Istanbul"
+        "https://api.open-meteo.com/v1/forecast?latitude=40.4093&longitude=49.8671&current_weather=true&timezone=Asia/Baku"
       );
 
       if (!response.ok) {

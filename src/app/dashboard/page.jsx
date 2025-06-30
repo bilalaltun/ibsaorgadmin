@@ -1,12 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
 import styles from "./dashboard.module.css";
+
+const RechartsPanel = dynamic(() => import("@/components/RechartsPanel"), {
+  ssr: false,
+});
 
 export default function DashboardPage() {
   const [stats, setStats] = useState(null);
   const [weather, setWeather] = useState(null);
+  const [logs, setLogs] = useState([]);
+  const [allLogs, setAllLogs] = useState([]);
+  const [logStats, setLogStats] = useState({
+    total: 0,
+    mobileCount: 0,
+    desktopCount: 0,
+    uniqueIps: 0,
+  });
   const [prompt, setPrompt] = useState("");
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,7 +39,38 @@ export default function DashboardPage() {
     65: "Şiddetli sağanak",
     80: "Sağanak yağmur",
     95: "Fırtına",
-    99: "Dolu ve fırtına"
+    99: "Dolu ve fırtına",
+  };
+
+  const fetchLogs = async () => {
+    try {
+      const res = await fetch(`/api/log?page=1&limit=10`);
+      const data = await res.json();
+      setLogs(data.data || []);
+    } catch (err) {
+      console.error("Log verisi alınamadı:", err);
+    }
+  };
+
+  const fetchAllLogs = async () => {
+    try {
+      const res = await fetch("/api/log?all=true");
+      const data = await res.json();
+      setAllLogs(data.data || []);
+
+      const uniqueIps = new Set(data.data.map((log) => log.ip_address)).size;
+      const mobileCount = data.data.filter((log) => log.is_mobile).length;
+      const desktopCount = data.data.length - mobileCount;
+
+      setLogStats({
+        total: data.data.length,
+        uniqueIps,
+        mobileCount,
+        desktopCount,
+      });
+    } catch (err) {
+      console.error("Tüm loglar alınamadı:", err);
+    }
   };
 
   useEffect(() => {
@@ -42,16 +86,18 @@ export default function DashboardPage() {
       setWeather({
         temperature: data.temperature,
         windspeed: data.windspeed,
-        description: weatherCodes[data.weathercode] ?? "Bilinmeyen"
+        description: weatherCodes[data.weathercode] ?? "Bilinmeyen",
       });
     };
 
     fetchStats();
     fetchWeather();
+    fetchLogs();
+    // fetchAllLogs();
   }, []);
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+    if (!prompt?.trim()) return;
     setLoading(true);
     try {
       const res = await fetch("/api/dashboard/generate", {
@@ -75,56 +121,137 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className={styles.container}>
-        <h1 className={styles.title}>MIZRAK MAKİNE SİTE YÖNETİM PANELİ</h1>
+        <h1 className={styles.title}>HIGHLIGHT VEBSAYTI İDARƏ PANELİ</h1>
 
         <div className={styles.cards}>
           <div className={styles.card}>
             <span>📦</span>
             <div>
-              <p>Toplam Ürün</p>
+              <p>Ümumi Məhsul</p>
               <strong>{stats?.product_count ?? "..."}</strong>
             </div>
           </div>
           <div className={styles.card}>
             <span>📝</span>
             <div>
-              <p>Toplam Blog</p>
+              <p>Ümumi Bloq</p>
               <strong>{stats?.blog_count ?? "..."}</strong>
             </div>
           </div>
           <div className={styles.card}>
             <span>👥</span>
             <div>
-              <p>Toplam Kullanıcı</p>
+              <p>Ümumi İstifadəçi</p>
               <strong>{stats?.user_count ?? "..."}</strong>
-            </div>
-          </div>
-          <div className={styles.card}>
-            <span>🌐</span>
-            <div>
-              <p>Toplam Dil</p>
-              <strong>{stats?.language_count ?? "..."}</strong>
             </div>
           </div>
         </div>
 
         <div className={styles.weather}>
-          <h2>🌤 Bursa Hava Durumu</h2>
-          <p><strong>Sıcaklık:</strong> {weather?.temperature ?? "..."}°C</p>
-          <p><strong>Açıklama:</strong> {weather?.description ?? "..."}</p>
-          <p><strong>Rüzgar:</strong> {weather?.windspeed ?? "..."} m/sn</p>
+          <div className={styles.weatherHeader}>
+            <h2>🌤 Bakı Hava Proqnozu</h2>
+            <span className={styles.badge}>
+              {weather?.description ?? "..."}
+            </span>
+          </div>
+          <div className={styles.weatherStats}>
+            <div className={styles.weatherItem}>
+              <span>🌡</span>
+              <div>
+                <p>Temperatur</p>
+                <strong>{weather?.temperature ?? "..."}°C</strong>
+              </div>
+            </div>
+            <div className={styles.weatherItem}>
+              <span>💨</span>
+              <div>
+                <p>Külək</p>
+                <strong>{weather?.windspeed ?? "..."} m/s</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.cards}>
+          <div className={styles.card}>
+            <span>📈</span>
+            <div>
+              <p>Ümumi Ziyarət</p>
+              <strong>{logStats.total}</strong>
+            </div>
+          </div>
+          <div className={styles.card}>
+            <span>📱</span>
+            <div>
+              <p>Mobil Cihaz</p>
+              <strong>{logStats.mobileCount}</strong>
+            </div>
+          </div>
+          <div className={styles.card}>
+            <span>🖥</span>
+            <div>
+              <p>Masaüstü Cihaz</p>
+              <strong>{logStats.desktopCount}</strong>
+            </div>
+          </div>
+          <div className={styles.card}>
+            <span>🔢</span>
+            <div>
+              <p>Unikal IP</p>
+              <strong>{logStats.uniqueIps}</strong>
+            </div>
+          </div>
+        </div>
+
+        <RechartsPanel allLogs={allLogs} />
+
+        <div className={styles.visitorLogs}>
+          <h2>🧾 Son Ziyarətçilər</h2>
+          <div className={styles.logTable}>
+            <div className={styles.logHeader}>
+              <span>IP</span>
+              <span>Şəhər</span>
+              <span>Ölkə</span>
+              <span>Səhifə</span>
+              <span>Müddət</span>
+              <span>Vaxt</span>
+              <span>Saat Qurşağı</span>
+              <span>Cihaz</span>
+              <span>Platforma</span>
+              <span>Bot?</span>
+              <span>Ekran İcazəsi</span>
+              <span>Lat / Long</span>
+            </div>
+            {logs.map((log) => (
+              <div key={log.id} className={styles.logRow}>
+                <span>{log.ip_address}</span>
+                <span>{log.city}</span>
+                <span>{log.country}</span>
+                <span>{log.page}</span>
+                <span>{log.duration_seconds}s</span>
+                <span>{new Date(log.created_at).toLocaleString()}</span>
+                <span>{log.timezone}</span>
+                <span>{log.is_mobile ? "Mobil" : "Masaüstü"}</span>
+                <span>{log.platform}</span>
+                <span>{log.is_bot ? "Bəli" : "Xeyr"}</span>
+                <span>{log.screen_resolution}</span>
+                <span>
+                  {log.latitude}, {log.longitude}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className={styles.generator}>
-          <h2>🧠 İçerik Üretimi</h2>
+          <h2>🧠 Məzmun Yaradılması</h2>
           <textarea
-            placeholder="İçerik üretmek için bir komut girin (max 200 karakter)"
-            maxLength={200}
+            placeholder="Əmr daxil edin..."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
           <button onClick={handleGenerate} disabled={loading}>
-            {loading ? "Üretiliyor..." : "Üret"}
+            {loading ? "Yaradılır..." : "Yarat"}
           </button>
           {response && (
             <div className={styles.output}>
