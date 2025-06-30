@@ -189,9 +189,9 @@ a {
 }
 /* Sidebar genel yapı */
 .sidebar {
-  width: 240px;
+  width: 280px;
   min-height: 100vh;
-  background: linear-gradient(to bottom, #2c3e50, #34495e);
+  background: linear-gradient(to top, #0a0f3c 0%, #1f2a60 40%, #4581c6 100%);
   color: #ecf0f1;
   padding: 1.5rem 1rem;
   display: flex;
@@ -202,7 +202,7 @@ a {
 
 /* Başlık */
 .sidebar-title {
-  font-size: 1.6rem;
+  font-size: 1rem;
   font-weight: bold;
   margin-bottom: 2rem;
   text-align: center;
@@ -260,7 +260,7 @@ a {
 
 /* Navbar stilleri */
 .navbar {
-  background-color: #34495e;
+  background-color: #ddcb04;
   color: #fff;
   padding: 1rem;
   display: flex;
@@ -897,4 +897,42 @@ input[type="file"] {
   border-radius: 6px;
   font-size: 13px;
   border: 1px solid #ddd;
+}
+
+.main-layout {
+  flex: 1;
+  padding: 1rem;
+  background-color: #ecf0f1;
+}
+.d-hidden {
+  display: none;
+}
+@media screen and (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+  }
+  .sidebar nav {
+    width: calc(100vw - 32px);
+  }
+  .main-layout {
+    padding: 10px;
+  }
+  .d-hidden {
+    display: block;
+  }
+  .content {
+    padding: 0px;
+  }
+
+  .table-max {
+    max-width: 87vw;
+    overflow-x: auto;
+  }
+  .logo {
+    height: 30px !important;
+  }
+}
+
+.logo {
+  height: 40px;
 }
