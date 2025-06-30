@@ -2,15 +2,25 @@
 "use client";
 
 import {
+  FaTachometerAlt,
+  FaUser,
+  FaUsers,
   FaPhone,
   FaImages,
   FaBoxOpen,
+  FaLayerGroup,
   FaBlog,
-  FaUser,
   FaWrench,
   FaLanguage,
-  FaFileAlt,
+  FaWpforms,
   FaListAlt,
+  FaFileAlt,
+  FaInfo,
+  FaHome,
+  FaCookieBite,
+  FaShieldVirus,
+  FaFlag,
+  FaLink,
 } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
@@ -28,8 +38,8 @@ export default function Sidebar({ toggleSidebar }) {
         aria-label="Toggle sidebar"
         className="d-hidden"
         style={{
-          position: 'absolute',
-          top: '14px',
+          position: "absolute",
+          top: "14px",
           fontSize: "1.5rem",
           background: "transparent",
           border: "none",
@@ -48,68 +58,69 @@ export default function Sidebar({ toggleSidebar }) {
           margin: "0 auto 1rem auto",
         }}
       />
-      <h2 className="sidebar-title">AIF CMS İdarə Paneli</h2>
+      <h2 className="sidebar-title">AIF CMS Admin Panel</h2>
+
       <nav>
         <ul className="sidebar-section">
           <li onClick={() => handleNavigate("/dashboard")}>
-            <FaFileAlt /> <span>Əsas Səhifə</span>
+            <FaTachometerAlt /> <span>Dashboard</span>
           </li>
           <li onClick={() => handleNavigate("/users")}>
-            <FaUser /> <span>İstifadəçilər</span>
+            <FaUsers /> <span>Users</span>
           </li>
           <li onClick={() => handleNavigate("/team-members")}>
-            <FaUser /> <span>Komanda Üzvləri</span>
+            <FaUser /> <span>Team Members</span>
           </li>
           <li onClick={() => handleNavigate("/contact-details")}>
-            <FaPhone /> <span>Əlaqə Məlumatları</span>
+            <FaPhone /> <span>Contact Info</span>
           </li>
           <li onClick={() => handleNavigate("/slider")}>
-            <FaImages /> <span>Slayder</span>
+            <FaImages /> <span>Slider</span>
           </li>
           <li onClick={() => handleNavigate("/product")}>
-            <FaBoxOpen /> <span>Xidmətlər</span>
+            <FaBoxOpen /> <span>Services</span>
           </li>
           <li onClick={() => handleNavigate("/categories")}>
-            <FaBoxOpen /> <span>Kateqoriyalar</span>
+            <FaLayerGroup /> <span>Categories</span>
           </li>
         </ul>
 
         <ul className="sidebar-section">
           <li onClick={() => handleNavigate("/blog")}>
-            <FaBlog /> <span>Bloq</span>
+            <FaBlog /> <span>Blog</span>
           </li>
           <li onClick={() => handleNavigate("/settings")}>
-            <FaWrench /> <span>Sayt Ayarları</span>
+            <FaWrench /> <span>Site Settings</span>
           </li>
           <li onClick={() => handleNavigate("/form-data")}>
-            <FaFileAlt /> <span>Form Məlumatları</span>
+            <FaWpforms /> <span>Form Submissions</span>
           </li>
           <li onClick={() => handleNavigate("/languages")}>
-            <FaLanguage /> <span>Dillər</span>
+            <FaLanguage /> <span>Languages</span>
           </li>
           <li onClick={() => handleNavigate("/menus")}>
-            <FaListAlt /> <span>Menyular</span>
+            <FaListAlt /> <span>Menus</span>
           </li>
           <li onClick={() => handleNavigate("/pages")}>
-            <FaFileAlt /> <span>Səhifələr</span>
+            <FaFileAlt /> <span>Pages</span>
           </li>
           <li onClick={() => handleNavigate("/about")}>
-            <FaFileAlt /> <span>Haqqımızda</span>
+            <FaInfo /> <span>About Us</span>
           </li>
           <li onClick={() => handleNavigate("/homepage")}>
-            <FaFileAlt /> <span>Əsas Səhifə Sabit Sahələr</span>
+            <FaHome /> <span>Homepage Sections</span>
           </li>
           <li onClick={() => handleNavigate("/cerezler")}>
-            <FaFileAlt /> <span>Çərəzlər</span>
+            <FaCookieBite /> <span>Cookies</span>
           </li>
           <li onClick={() => handleNavigate("/kvkk")}>
-            <FaFileAlt /> <span>Məxfilik Siyasəti</span>
+            <FaShieldVirus /> <span>Privacy Policy</span>
           </li>
           <li onClick={() => handleNavigate("/banner")}>
-            <FaFileAlt /> <span>Banner</span>
+            <FaFlag /> <span>Banner</span>
           </li>
           <li onClick={() => handleNavigate("/references")}>
-            <FaFileAlt /> <span>Referanslar</span>
+            <FaLink /> <span>References</span>
           </li>
         </ul>
       </nav>

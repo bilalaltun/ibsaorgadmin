@@ -6,6 +6,7 @@ export default function Navbar({ toggleSidebar }) {
   const [username, setUsername] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [logo, setLogo] = useState("");
 
   useEffect(() => {
     const name = Cookies.get("username") || "Kullanıcı";
@@ -20,6 +21,19 @@ export default function Navbar({ toggleSidebar }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const fetchSettings = async () => {
+    try {
+      const res = await fetch("/api/sitesettings");
+      const json = await res.json();
+      const settings = Array.isArray(json.data) ? json.data[0] : json.data;
+      setLogo(settings.theme.logo_img);
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
   const handleLogout = () => {
     Cookies.remove("username");
     Cookies.remove("token");
@@ -27,16 +41,19 @@ export default function Navbar({ toggleSidebar }) {
   };
 
   return (
-    <header style={{
-      backgroundColor: "#dd1f26",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      padding: "0 1rem",
-      height: "60px",
-      color: "#fff",
-      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)"
-    }}>
+    <header
+      style={{
+        background:
+          "linear-gradient(to left, #0a0f3c 0%, #1f2a60 40%, #4581c6 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 1rem",
+        height: "60px",
+        color: "#fff",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+      }}
+    >
       {/* Sidebar Toggle */}
       <button
         onClick={toggleSidebar}
@@ -46,16 +63,18 @@ export default function Navbar({ toggleSidebar }) {
           background: "transparent",
           border: "none",
           color: "#fff",
-          cursor: "pointer"
+          cursor: "pointer",
         }}
       >
         ☰
       </button>
 
       {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-        <img src="/images/logo.png" alt="Logo" style={{ height: "40px" }} />
-      </div>
+      {logo && (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <img src={logo} alt="Logo" className="logo" />
+        </div>
+      )}
 
       {/* Kullanıcı Dropdown */}
       <div ref={dropdownRef} style={{ position: "relative" }}>
@@ -76,18 +95,20 @@ export default function Navbar({ toggleSidebar }) {
         </button>
 
         {dropdownOpen && (
-          <div style={{
-            position: "absolute",
-            right: 0,
-            marginTop: "8px",
-            backgroundColor: "#fff",
-            color: "#333",
-            borderRadius: "6px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            overflow: "hidden",
-            minWidth: "140px",
-            zIndex: 1000
-          }}>
+          <div
+            style={{
+              position: "absolute",
+              right: 0,
+              marginTop: "8px",
+              backgroundColor: "#fff",
+              color: "#333",
+              borderRadius: "6px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+              overflow: "hidden",
+              minWidth: "140px",
+              zIndex: 1000,
+            }}
+          >
             <button
               onClick={handleLogout}
               style={{
@@ -100,10 +121,12 @@ export default function Navbar({ toggleSidebar }) {
                 fontSize: "0.95rem",
                 transition: "background 0.2s",
               }}
-              onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
-              onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+              onMouseOver={(e) => (e.target.style.backgroundColor = "#f5f5f5")}
+              onMouseOut={(e) =>
+                (e.target.style.backgroundColor = "transparent")
+              }
             >
-              🚪 Çıkış Yap
+              🚪 Log Out
             </button>
           </div>
         )}
