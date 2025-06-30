@@ -30,6 +30,7 @@
   resize: vertical;
   font-family: inherit;
   transition: border-color 0.2s;
+  background-color: #fff;
 }
 
 .input:focus,

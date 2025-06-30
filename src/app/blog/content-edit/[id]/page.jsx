@@ -14,10 +14,10 @@ export default function BlogContentEditPage() {
   const { id } = useParams();
   const router = useRouter();
 
-  const [languages, setLanguages] = useState([]);
-  const [activeLang, setActiveLang] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [categories, setCategories] = useState([]);
 
   const [staticFields, setStaticFields] = useState({
     link: "",
@@ -26,46 +26,42 @@ export default function BlogContentEditPage() {
     author: "",
     isactive: false,
     show_at_home: false,
-    tags: [],
+    tags: "",
+    title: "",
+    details: "",
+    content: "",
+    category_id: "",
   });
 
-  const [multiLangData, setMultiLangData] = useState({});
-
+  // Fetch categories
   useEffect(() => {
-    async function fetchLanguages() {
+    async function fetchCategories() {
       try {
-        const res = await fetch("/api/languages");
-        if (!res.ok) throw new Error("Diller alınamadı");
-        const data = await res.json();
-        const langs = data.map((l) => l.name);
-        setLanguages(langs);
-        setActiveLang(langs[0]);
-
-        const initial = langs.reduce((acc, lang) => {
-          acc[lang] = {
-            title: "",
-            details: "",
-            content: "",
-            category: "",
-          };
-          return acc;
-        }, {});
-        setMultiLangData(initial);
+        const res = await fetch("/api/categories");
+        if (!res.ok) throw new Error("Failed to fetch categories");
+        const json = await res.json();
+        const activeCategories = json.data.filter((cat) => cat.isactive);
+        setCategories(activeCategories);
       } catch (err) {
-        console.error("Dil verisi alınamadı:", err);
-        setError("Dil verisi alınamadı.");
-        setLoading(false);
+        console.error("❌ Failed to load categories:", err);
+        Swal.fire("Error", "Could not load categories", "error");
       }
     }
 
-    fetchLanguages();
+    fetchCategories();
   }, []);
 
+  // Fetch blog by ID
   useEffect(() => {
     async function fetchBlog() {
+      const token = Cookies.get("token");
       try {
-        const res = await fetch(`/api/blogs?id=${id}`);
-        if (!res.ok) throw new Error("Veri alınamadı");
+        const res = await fetch(`/api/blogs?id=${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) throw new Error("Failed to fetch blog");
         const data = await res.json();
 
         setStaticFields({
@@ -76,49 +72,47 @@ export default function BlogContentEditPage() {
           show_at_home: data.show_at_home,
           isactive: data.isactive,
           tags: (data.tags || []).join(", "),
+          title: data.title || "",
+          details: data.details || "",
+          content: data.content || "",
+          category_id: data.category_id || "",
         });
-
-        const langData = {};
-        languages.forEach((lang) => {
-          langData[lang] = {
-            title: data.title?.[lang] || "",
-            details: data.details?.[lang] || "",
-            content: data.content?.[lang] || "",
-            category: data.category?.[lang] || "",
-          };
-        });
-
-        setMultiLangData(langData);
       } catch (err) {
-        console.error("❌ Blog yüklenemedi:", err);
-        setError("Blog verileri alınamadı.");
+        console.error("❌ Failed to load blog:", err);
+        setError("Failed to fetch blog data.");
       } finally {
         setLoading(false);
       }
     }
 
-    if (languages.length > 0) fetchBlog();
-  }, [id, languages]);
+    fetchBlog();
+  }, [id]);
 
-  const handleStaticChange = (key, value) => {
+  const handleChange = (key, value) => {
     setStaticFields((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleLangChange = (lang, key, value) => {
-    setMultiLangData((prev) => ({
-      ...prev,
-      [lang]: { ...prev[lang], [key]: value },
-    }));
-  };
-
   const isFormValid = () => {
-    const { link, thumbnail, date, author } = staticFields;
-    if (!link || !thumbnail || !date || !author) return false;
-
-    return languages.every((lang) => {
-      const d = multiLangData[lang];
-      return d.title.trim() && d.details.trim() && d.content.trim();
-    });
+    const {
+      link,
+      thumbnail,
+      date,
+      author,
+      title,
+      details,
+      content,
+      category_id,
+    } = staticFields;
+    return (
+      link &&
+      thumbnail &&
+      date &&
+      author &&
+      title.trim() &&
+      details.trim() &&
+      content.trim() &&
+      category_id
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -127,8 +121,8 @@ export default function BlogContentEditPage() {
     if (!isFormValid()) {
       Swal.fire({
         icon: "warning",
-        title: "Eksik Alanlar",
-        text: "Lütfen tüm alanları doldurduğunuzdan emin olun.",
+        title: "Missing Fields",
+        text: "Please fill in all required fields.",
       });
       return;
     }
@@ -140,43 +134,18 @@ export default function BlogContentEditPage() {
       author: staticFields.author,
       isactive: staticFields.isactive,
       show_at_home: staticFields.show_at_home,
-      title: {},
-      details: {},
-      content: {},
-      category: {},
-      tags: [],
+      title: staticFields.title,
+      details: staticFields.details,
+      content: staticFields.content,
+      category_id: Number(staticFields.category_id),
+      tags: staticFields.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean),
     };
 
-    payload.title = languages.map((lang) => ({
-      langCode: lang,
-      value: multiLangData[lang]?.title || "",
-    }));
-
-    payload.details = languages.map((lang) => ({
-      langCode: lang,
-      value: multiLangData[lang]?.details || "",
-    }));
-
-    payload.content = languages.map((lang) => ({
-      langCode: lang,
-      value: multiLangData[lang]?.content || "",
-    }));
-
-    payload.category = languages.map((lang) => ({
-      langCode: lang,
-      value: multiLangData[lang]?.category || "",
-    }));
-
-    payload.tags =
-      typeof staticFields?.tags === "string"
-        ? staticFields.tags
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter(Boolean)
-        : [];
-
     Swal.fire({
-      title: "Kaydediliyor...",
+      title: "Saving...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
@@ -192,119 +161,112 @@ export default function BlogContentEditPage() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Güncelleme başarısız");
+      if (!res.ok) throw new Error("Update failed");
 
       Swal.fire({
         icon: "success",
-        title: "Başarılı!",
-        text: `Blog #${id} başarıyla güncellendi.`,
+        title: "Success!",
+        text: `Blog #${id} was updated successfully.`,
       }).then(() => router.push("/blog"));
     } catch (err) {
       console.error(err);
       Swal.fire({
         icon: "error",
-        title: "Hata",
-        text: "Kaydetme sırasında bir hata oluştu.",
+        title: "Error",
+        text: "Something went wrong while saving.",
       });
     }
   };
 
-  const current = multiLangData[activeLang] || {};
-
   return (
     <Layout>
       <div className={styles.blogEditContainer}>
-        <h1 className={styles.pageTitle}>📄 Blog</h1>
+        <h1 className={styles.pageTitle}>📄 Edit Blog</h1>
 
         {loading ? (
           <div className={"loadingSpinner"}>
             <div className={"spinner"} />
-            <p>İçerikler yükleniyor...</p>
+            <p>Loading content...</p>
           </div>
         ) : (
           <div className={styles.editForm}>
             {error && <p className={styles.errorText}>{error}</p>}
 
             <section className={styles.section}>
-              <h2>Sabit Alanlar</h2>
+              <h2>Blog Information</h2>
 
-              <label>Kapak Fotoğrafı</label>
+              <label>Cover Image</label>
               <UploadField
                 type="image"
                 accept="image/*"
-                label="Kapak Görseli Seç"
+                label="Choose Cover Image"
                 value={staticFields.thumbnail}
-                onChange={(url) => handleStaticChange("thumbnail", url)}
+                onChange={(url) => handleChange("thumbnail", url)}
                 disabled={false}
                 multiple={false}
               />
 
-              <label>Tarih</label>
+              <label>Date</label>
               <input
                 type="date"
                 value={staticFields.date}
-                onChange={(e) => handleStaticChange("date", e.target.value)}
+                onChange={(e) => handleChange("date", e.target.value)}
               />
 
-              <label>Yazar</label>
+              <label>Author</label>
               <input
                 type="text"
                 value={staticFields.author}
-                onChange={(e) => handleStaticChange("author", e.target.value)}
+                onChange={(e) => handleChange("author", e.target.value)}
               />
 
-              <label>Etiketler (virgülle)</label>
+              <label>Tags (comma separated)</label>
               <input
                 type="text"
                 value={staticFields.tags}
-                onChange={(e) => handleStaticChange("tags", e.target.value)}
+                onChange={(e) => handleChange("tags", e.target.value)}
               />
+
+              <label>Category</label>
+              <select
+                value={staticFields.category_id || ""}
+                onChange={(e) => handleChange("category_id", e.target.value)}
+              >
+                <option value="">Select a category</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
             </section>
 
             <section className={styles.section}>
-              <div className={styles.langTabs}>
-                {languages.map((lang) => (
-                  <button
-                    key={lang}
-                    type="button"
-                    className={activeLang === lang ? styles.active : ""}
-                    onClick={() => setActiveLang(lang)}
-                  >
-                    {lang.toUpperCase()}
-                  </button>
-                ))}
-              </div>
+              <h2>Content</h2>
 
-              <h2>{activeLang.toUpperCase()} İçeriği</h2>
-
-              <label>Başlık</label>
+              <label>Title</label>
               <input
                 type="text"
-                value={current.title || ""}
-                onChange={(e) =>
-                  handleLangChange(activeLang, "title", e.target.value)
-                }
+                value={staticFields.title}
+                onChange={(e) => handleChange("title", e.target.value)}
               />
 
-              <label>Detay</label>
+              <label>Details</label>
               <input
                 type="text"
-                value={current.details || ""}
-                onChange={(e) =>
-                  handleLangChange(activeLang, "details", e.target.value)
-                }
+                value={staticFields.details}
+                onChange={(e) => handleChange("details", e.target.value)}
               />
 
-              <label>Kontent</label>
+              <label>Content</label>
               <SimpleEditor
-                key={activeLang}
-                value={current.content || ""}
-                onChange={(e) => handleLangChange(activeLang, "content", e)}
+                value={staticFields.content}
+                onChange={(val) => handleChange("content", val)}
               />
             </section>
 
             <button onClick={handleSubmit} className={styles.submitButton}>
-              Kaydet
+              Save
             </button>
           </div>
         )}

@@ -8,14 +8,12 @@ import Swal from "sweetalert2";
 import Cookies from "js-cookie";
 import styles from "./CreateBlogPage.module.css";
 
-const PlaygroundApp = dynamic(() => import("@/package/App"), { ssr: false });
+const Editor = dynamic(() => import("@/package/App"), { ssr: false });
 
 export default function CreateBlogPage() {
   const imageRef = useRef();
 
-  const [languages, setLanguages] = useState([]);
-  const [activeLang, setActiveLang] = useState("");
-  const [multiLangData, setMultiLangData] = useState({});
+  const [categories, setCategories] = useState([]);
 
   const [form, setForm] = useState({
     link: "",
@@ -25,56 +23,44 @@ export default function CreateBlogPage() {
     isactive: false,
     show_at_home: false,
     tags: "",
+    title: "",
+    details: "",
+    content: "",
+    category_id: "",
   });
 
-  // Dilleri çek
   useEffect(() => {
-    async function fetchLanguages() {
+    async function fetchCategories() {
       try {
-        const res = await fetch("/api/languages");
-        if (!res.ok) throw new Error("Diller alınamadı.");
-        const data = await res.json();
-        const langs = data.map((l) => l.name);
-
-        setLanguages(langs);
-        setActiveLang(langs[0]);
-
-        const initialLangData = langs.reduce((acc, lang) => {
-          acc[lang] = { title: "", details: "", content: "", category: "" };
-          return acc;
-        }, {});
-        setMultiLangData(initialLangData);
+        const res = await fetch("/api/categories");
+        if (!res.ok) throw new Error("Failed to fetch categories");
+        const json = await res.json();
+        const active = json.data.filter((cat) => cat.isactive);
+        setCategories(active);
       } catch (err) {
-        console.error("Dil verisi alınamadı:", err);
+        console.error("❌ Error loading categories:", err);
+        Swal.fire("Error", "Failed to load categories", "error");
       }
     }
 
-    fetchLanguages();
+    fetchCategories();
   }, []);
 
   const handleFormChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleLangChange = (lang, field, value) => {
-    setMultiLangData((prev) => ({
-      ...prev,
-      [lang]: { ...prev[lang], [field]: value },
-    }));
-  };
-
   const isFormValid = () => {
     return (
       form.link.trim() &&
       form.thumbnail.trim() &&
+      form.date.trim() &&
       form.author.trim() &&
       form.tags.trim() &&
-      languages.every(
-        (lang) =>
-          multiLangData[lang].title.trim() &&
-          multiLangData[lang].details.trim() &&
-          multiLangData[lang].content.trim()
-      )
+      form.title.trim() &&
+      form.details.trim() &&
+      form.content.trim() &&
+      form.category_id
     );
   };
 
@@ -84,41 +70,31 @@ export default function CreateBlogPage() {
     if (!isFormValid()) {
       Swal.fire({
         icon: "warning",
-        title: "Eksik Bilgi",
-        text: "Tüm alanlar ve diller doldurulmalı.",
+        title: "Missing Fields",
+        text: "Please fill in all required fields.",
       });
       return;
     }
 
-    const tags = form.tags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-
-    const title = [];
-    const details = [];
-    const content = [];
-    const category = [];
-
-    languages.forEach((lang) => {
-      const entry = multiLangData[lang];
-      title.push({ value: entry.title, langCode: lang });
-      details.push({ value: entry.details, langCode: lang });
-      content.push({ value: entry.content, langCode: lang });
-      category.push({ value: entry.category, langCode: lang });
-    });
-
     const payload = {
-      ...form,
-      tags,
-      title,
-      details,
-      content,
-      category,
+      link: form.link,
+      thumbnail: form.thumbnail,
+      date: form.date,
+      author: form.author,
+      isactive: form.isactive,
+      show_at_home: form.show_at_home,
+      title: form.title,
+      details: form.details,
+      content: form.content,
+      category_id: Number(form.category_id),
+      tags: form.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean),
     };
 
     Swal.fire({
-      title: "Blog ekleniyor...",
+      title: "Adding blog...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
@@ -134,50 +110,46 @@ export default function CreateBlogPage() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Blog eklenemedi.");
+      if (!res.ok) throw new Error("Blog could not be added.");
 
       Swal.fire({
         icon: "success",
-        title: "Başarılı!",
-        text: "Blog başarıyla eklendi.",
+        title: "Success!",
+        text: "Blog was added successfully.",
       }).then(() => {
-        window.location.href = "blog";
+        window.location.href = "/blog";
       });
-
-      // reset
     } catch (err) {
       console.error(err);
       Swal.fire({
         icon: "error",
-        title: "Hata",
-        text: "Blog kaydedilirken bir sorun oluştu.",
+        title: "Error",
+        text: "An error occurred while saving the blog.",
       });
     }
   };
 
-  const current = multiLangData[activeLang] || {};
-
   return (
     <Layout>
       <div className={styles.container}>
-        <h2 className={styles.title}>Yeni Blog Ekle</h2>
+        <h2 className={styles.title}>Add New Blog</h2>
         <form onSubmit={handleSubmit} className={styles.form}>
           <section className={styles.section}>
-            <label>Kapak Görseli</label>
+            <label>Cover Image</label>
             <UploadField
               type="image"
               ref={imageRef}
               accept="image/*"
-              label="Görsel Yükle"
+              label="Upload Image"
               value={form.thumbnail}
               onChange={(url) => handleFormChange("thumbnail", url)}
             />
 
-            <label>Link</label>
+            <label>Slug / Link</label>
             <input
               type="text"
               className={styles.input}
-              placeholder="yazilar/akilli-otomat"
+              placeholder="e.g. blog/ipsa-cnc-tech"
               value={form.link}
               onChange={(e) => {
                 const rawValue = e.target.value;
@@ -188,7 +160,7 @@ export default function CreateBlogPage() {
               }}
             />
 
-            <label>Tarih</label>
+            <label>Date</label>
             <input
               type="date"
               className={styles.input}
@@ -196,7 +168,7 @@ export default function CreateBlogPage() {
               onChange={(e) => handleFormChange("date", e.target.value)}
             />
 
-            <label>Yazar</label>
+            <label>Author</label>
             <input
               type="text"
               className={styles.input}
@@ -204,65 +176,61 @@ export default function CreateBlogPage() {
               onChange={(e) => handleFormChange("author", e.target.value)}
             />
 
-            <label>Etiketler (virgülle)</label>
+            <label>Tags (comma separated)</label>
             <input
               type="text"
               className={styles.input}
               value={form.tags}
               onChange={(e) => handleFormChange("tags", e.target.value)}
             />
+
+            <label>Category</label>
+            <select
+              value={form.category_id || ""}
+              onChange={(e) => handleFormChange("category_id", e.target.value)}
+              className={styles.input}
+            >
+              <option value="">Select a category</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
           </section>
 
-          {languages.length > 0 && (
-            <section className={styles.section}>
-              <div className={styles.langTabs}>
-                {languages.map((lang) => (
-                  <button
-                    key={lang}
-                    type="button"
-                    className={activeLang === lang ? styles.active : ""}
-                    onClick={() => setActiveLang(lang)}
-                  >
-                    {lang.toUpperCase()}
-                  </button>
-                ))}
-              </div>
+          <section className={styles.section}>
+            <h2>Content</h2>
 
-              <h2>{activeLang.toUpperCase()} İçeriği</h2>
+            <label>Title</label>
+            <input
+              type="text"
+              className={styles.input}
+              value={form.title}
+              onChange={(e) => handleFormChange("title", e.target.value)}
+            />
 
-              <label>Başlık</label>
-              <input
-                type="text"
-                value={current.title}
-                onChange={(e) =>
-                  handleLangChange(activeLang, "title", e.target.value)
-                }
-              />
+            <label>Details</label>
+            <input
+              type="text"
+              className={styles.input}
+              value={form.details}
+              onChange={(e) => handleFormChange("details", e.target.value)}
+            />
 
-              <label>Detay</label>
-              <input
-                type="text"
-                value={current.details}
-                onChange={(e) =>
-                  handleLangChange(activeLang, "details", e.target.value)
-                }
-              />
-
-              <label>Kontent</label>
-              <PlaygroundApp
-                key={`${activeLang}`}
-                value={current.content}
-                onChange={(val) => handleLangChange(activeLang, "content", val)}
-              />
-            </section>
-          )}
+            <label>Content</label>
+            <Editor
+              value={form.content}
+              onChange={(val) => handleFormChange("content", val)}
+            />
+          </section>
 
           <button
             type="submit"
             className={"submitButton"}
             disabled={!isFormValid()}
           >
-            EKLE
+            Add Blog
           </button>
         </form>
       </div>

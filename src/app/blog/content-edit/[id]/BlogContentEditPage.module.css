@@ -48,8 +48,11 @@
 
 .section input[type="text"],
 .section input[type="date"],
-.section input[type="file"] {
+.section input[type="file"],
+.section select {
   width: 100%;
+  background-color: #fff;
+
   padding: 0.6rem 1rem;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -125,7 +128,9 @@
   border-radius: 10px;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 114, 255, 0.4);
-  transition: background 0.3s ease, transform 0.2s ease;
+  transition:
+    background 0.3s ease,
+    transform 0.2s ease;
 }
 
 .submitButton:hover {
