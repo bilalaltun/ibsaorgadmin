@@ -36,6 +36,7 @@ export default function EditEventPage() {
     if (!dateStr) return "";
     return new Date(dateStr).toISOString().split("T")[0];
   };
+
   useEffect(() => {
     async function fetchCategories() {
       try {
@@ -49,16 +50,17 @@ export default function EditEventPage() {
     }
     fetchCategories();
   }, []);
+
   useEffect(() => {
     async function fetchEvent() {
       try {
         const res = await fetch(`/api/events?id=${id}`);
-        if (!res.ok) throw new Error("Event bulunamadı.");
+        if (!res.ok) throw new Error("Event not found.");
         const data = await res.json();
         setForm(data);
       } catch (err) {
         console.error(err);
-        setError("Etkinlik verisi alınamadı.");
+        setError("Failed to load event data.");
       } finally {
         setLoading(false);
       }
@@ -90,12 +92,12 @@ export default function EditEventPage() {
     e.preventDefault();
 
     if (!isFormValid()) {
-      Swal.fire("Eksik Bilgi", "Tüm alanları doldurun.", "warning");
+      Swal.fire("Missing Information", "All fields are required.", "warning");
       return;
     }
 
     Swal.fire({
-      title: "Güncelleniyor...",
+      title: "Updating...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
@@ -111,29 +113,29 @@ export default function EditEventPage() {
         body: JSON.stringify(form),
       });
 
-      if (!res.ok) throw new Error("Sunucu hatası");
+      if (!res.ok) throw new Error("Server error");
 
-      Swal.fire("Başarılı", "Etkinlik güncellendi.", "success").then(() =>
+      Swal.fire("Success", "Event updated successfully.", "success").then(() =>
         router.push("/events")
       );
     } catch (err) {
       console.error(err);
-      Swal.fire("Hata", "Güncelleme sırasında bir hata oluştu.", "error");
+      Swal.fire("Error", "An error occurred while updating the event.", "error");
     }
   };
 
   return (
     <Layout>
       <div className={styles.container}>
-        <h2 className={styles.title}>Etkinlik Düzenle</h2>
+        <h2 className={styles.title}>Edit Event</h2>
 
         {loading ? (
-          <p>Yükleniyor...</p>
+          <p>Loading...</p>
         ) : error ? (
           <p className={styles.error}>{error}</p>
         ) : (
           <form onSubmit={handleSubmit} className={styles.form}>
-            <label>Başlık</label>
+            <label>Title</label>
             <input
               className={styles.input}
               type="text"
@@ -141,7 +143,7 @@ export default function EditEventPage() {
               onChange={(e) => handleChange("title", e.target.value)}
             />
 
-            <label>Başlangıç Tarihi</label>
+            <label>Start Date</label>
             <input
               className={styles.input}
               type="date"
@@ -149,7 +151,7 @@ export default function EditEventPage() {
               onChange={(e) => handleChange("start_date", e.target.value)}
             />
 
-            <label>Bitiş Tarihi</label>
+            <label>End Date</label>
             <input
               className={styles.input}
               type="date"
@@ -171,7 +173,7 @@ export default function EditEventPage() {
               ))}
             </select>
 
-            <label>Lokasyon</label>
+            <label>Location</label>
             <input
               className={styles.input}
               type="text"
@@ -179,7 +181,7 @@ export default function EditEventPage() {
               onChange={(e) => handleChange("location", e.target.value)}
             />
 
-            <label>Sanction Türü</label>
+            <label>Sanction Type</label>
             <input
               className={styles.input}
               type="text"
@@ -187,7 +189,7 @@ export default function EditEventPage() {
               onChange={(e) => handleChange("sanction_type", e.target.value)}
             />
 
-            <label>İletişim E-Posta</label>
+            <label>Contact Email</label>
             <input
               className={styles.input}
               type="email"
@@ -195,17 +197,17 @@ export default function EditEventPage() {
               onChange={(e) => handleChange("contact_email", e.target.value)}
             />
 
-            <label>Kapak Görseli</label>
+            <label>Cover Image</label>
             <UploadField
               ref={imageRef}
               type="image"
               accept="image/*"
               value={form.image_url}
-              label="Görsel Seç"
+              label="Upload Cover Image"
               onChange={(url) => handleChange("image_url", url)}
             />
 
-            <label>Açıklama</label>
+            <label>Description</label>
             <textarea
               className={styles.textarea}
               rows={4}
@@ -213,13 +215,13 @@ export default function EditEventPage() {
               onChange={(e) => handleChange("description", e.target.value)}
             />
 
-            <label>PDF Dosyası</label>
+            <label>Download File (PDF)</label>
             <UploadField
               ref={fileRef}
               type="file"
               accept="application/pdf"
               value={form.downloads}
-              label="PDF Yükle"
+              label="Upload PDF"
               onChange={(url) =>
                 handleChange(
                   "downloads",
@@ -228,8 +230,8 @@ export default function EditEventPage() {
               }
             />
 
-            <button type="submit" className={"submitButton"}>
-              GÜNCELLE
+            <button type="submit" className="submitButton">
+              UPDATE
             </button>
           </form>
         )}
