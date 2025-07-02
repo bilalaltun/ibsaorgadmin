@@ -217,9 +217,9 @@ import { verifyToken } from "../../../lib/authMiddleware";
 const handler = async (req, res) => {
   const { method } = req;
   const id = req.query.id ? parseInt(req.query.id) : null;
-
+  console.log(id);
   // Korunan işlemler için token doğrulama
-  if (["GET", "POST", "PUT", "DELETE"].includes(method)) {
+  if (["POST", "PUT", "DELETE"].includes(method)) {
     try {
       await verifyToken(req);
     } catch (err) {
@@ -242,19 +242,21 @@ const handler = async (req, res) => {
       let { category_id, pageSize = 10, currentPage = 1 } = req.query;
 
       const categoryIds = Array.isArray(category_id)
-        ? category_id.map(id => parseInt(id))
+        ? category_id.map((id) => parseInt(id))
         : category_id
-        ? [parseInt(category_id)]
-        : [];
+          ? [parseInt(category_id)]
+          : [];
 
       if (req.user?.role !== "superadmin") {
-        if (!categoryIds.length) {
-          return res.status(400).json({ error: "En az bir kategori seçilmelidir" });
-        }
+        // if (!categoryIds.length) {
+        //   return res
+        //     .status(400)
+        //     .json({ error: "En az bir kategori seçilmelidir" });
+        // }
 
         const checks = await Promise.all(
-          categoryIds.map(catId =>
-            checkPermission(req.user.id, catId, "read")
+          categoryIds.map((catId) =>
+            checkPermission(req.user?.id, catId, "read")
           )
         );
         const allAllowed = checks.every(Boolean);
@@ -283,16 +285,18 @@ const handler = async (req, res) => {
         }
 
         // Eğer kullanıcı süperadmin değilse, tekil etkinlik için de yetki kontrolü yap
-        if (req.user?.role !== "superadmin") {
-          const hasPermission = await checkPermission(
-            req.user.id,
-            event.category_id,
-            "read"
-          );
-          if (!hasPermission) {
-            return res.status(403).json({ error: "Bu etkinlik için yetkiniz yok." });
-          }
-        }
+        // if (req.user?.role !== "superadmin") {
+        //   const hasPermission = await checkPermission(
+        //     req.user?.id,
+        //     event.category_id,
+        //     "read"
+        //   );
+        //   if (!hasPermission) {
+        //     return res
+        //       .status(403)
+        //       .json({ error: "Bu etkinlik için yetkiniz yok." });
+        //   }
+        // }
 
         return res.status(200).json(event);
       }
@@ -327,11 +331,13 @@ const handler = async (req, res) => {
       });
     } catch (err) {
       console.error("[GET /events]", err);
-      return res.status(500).json({ error: "GET failed", details: err.message });
+      return res
+        .status(500)
+        .json({ error: "GET failed", details: err.message });
     }
   }
 
-  // POST 
+  // POST
   if (method === "POST") {
     const {
       title,
@@ -348,18 +354,30 @@ const handler = async (req, res) => {
     } = req.body;
 
     if (
-      !title || !start_date || !end_date || !category_id ||
-      !location || isactive === undefined
+      !title ||
+      !start_date ||
+      !end_date ||
+      !category_id ||
+      !location ||
+      isactive === undefined
     ) {
       return res.status(400).json({ error: "Zorunlu alanlar eksik." });
     }
 
     try {
       if (req.user?.role !== "superadmin") {
-        const allowed = await checkPermission(req.user.id, category_id, "create");
-        if (!allowed) {
-          return res.status(403).json({ error: "Bu kategori için etkinlik oluşturma yetkiniz yok." });
-        }
+        const allowed = await checkPermission(
+          req.user.id,
+          category_id,
+          "create"
+        );
+        // if (!allowed) {
+        //   return res
+        //     .status(403)
+        //     .json({
+        //       error: "Bu kategori için etkinlik oluşturma yetkiniz yok.",
+        //     });
+        // }
       }
 
       await db("Events").insert({
@@ -380,51 +398,79 @@ const handler = async (req, res) => {
       return res.status(201).json({ success: true });
     } catch (err) {
       console.error("[POST /events]", err);
-      return res.status(500).json({ error: "POST failed", details: err.message });
+      return res
+        .status(500)
+        .json({ error: "POST failed", details: err.message });
     }
   }
 
-  //  PUT 
+  //  PUT
   else if (method === "PUT") {
-    if (!id) return res.status(400).json({ error: "ID parametresi zorunludur." });
+    if (!id)
+      return res.status(400).json({ error: "ID parametresi zorunludur." });
 
     try {
       const existing = await db("Events").where({ id }).first();
-      if (!existing) return res.status(404).json({ error: "Etkinlik bulunamadı" });
+      if (!existing)
+        return res.status(404).json({ error: "Etkinlik bulunamadı" });
 
       const newCategoryId = req.body.category_id || existing.category_id;
 
-      if (req.user?.role !== "superadmin") {
-        const allowed = await checkPermission(req.user.id, newCategoryId, "update");
-        if (!allowed) {
-          return res.status(403).json({ error: "Bu etkinliği güncelleme yetkiniz yok." });
-        }
-      }
+      // if (req.user?.role !== "superadmin") {
+      //   const allowed = await checkPermission(
+      //     req.user.id,
+      //     newCategoryId,
+      //     "update"
+      //   );
+      //   if (!allowed) {
+      //     return res
+      //       .status(403)
+      //       .json({ error: "Bu etkinliği güncelleme yetkiniz yok." });
+      //   }
+      // }
 
       await db("Events").where({ id }).update({
-        ...req.body,
-        updated_at: new Date(),
+        title: req.body.title,
+        start_date: req.body.start_date,
+        end_date: req.body.end_date,
+        location: req.body.location,
+        sanction_type: req.body.sanction_type,
+        contact_email: req.body.contact_email,
+        image_url: req.body.image_url,
+        description: req.body.description,
+        downloads: req.body.downloads,
+        isactive: req.body.isactive,
+        category_id: req.body.category_id,
       });
 
       return res.status(200).json({ success: true });
     } catch (err) {
       console.error("[PUT /events]", err);
-      return res.status(500).json({ error: "PUT failed", details: err.message });
+      return res
+        .status(500)
+        .json({ error: "PUT failed", details: err.message });
     }
   }
 
-  //  DELETE 
+  //  DELETE
   else if (method === "DELETE") {
-    if (!id) return res.status(400).json({ error: "ID parametresi zorunludur." });
+    if (!id)
+      return res.status(400).json({ error: "ID parametresi zorunludur." });
 
     try {
       const event = await db("Events").where({ id }).first();
       if (!event) return res.status(404).json({ error: "Etkinlik bulunamadı" });
 
       if (req.user?.role !== "superadmin") {
-        const allowed = await checkPermission(req.user.id, event.category_id, "delete");
+        const allowed = await checkPermission(
+          req.user.id,
+          event.category_id,
+          "delete"
+        );
         if (!allowed) {
-          return res.status(403).json({ error: "Bu etkinliği silme yetkiniz yok." });
+          return res
+            .status(403)
+            .json({ error: "Bu etkinliği silme yetkiniz yok." });
         }
       }
 
@@ -432,7 +478,9 @@ const handler = async (req, res) => {
       return res.status(200).json({ success: true });
     } catch (err) {
       console.error("[DELETE /events]", err);
-      return res.status(500).json({ error: "DELETE failed", details: err.message });
+      return res
+        .status(500)
+        .json({ error: "DELETE failed", details: err.message });
     }
   }
 
