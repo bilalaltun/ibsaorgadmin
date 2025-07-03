@@ -37,7 +37,7 @@
  *         schema:
  *           type: integer
  *           default: 10
- *         description: Sayfa başına kayıt sayısı 
+ *         description: Sayfa başına kayıt sayısı
  *       - in: query
  *         name: currentPage
  *         required: false
@@ -202,7 +202,6 @@
  *             type: string
  */
 
-
 import db from "../../../lib/db";
 import { withCors } from "../../../lib/withCors";
 import { verifyToken } from "../../../lib/authMiddleware";
@@ -210,14 +209,13 @@ import { verifyToken } from "../../../lib/authMiddleware";
 const handler = async (req, res) => {
   const id = req.query.id ? parseInt(req.query.id) : null;
 
-  if (["GET", "POST", "PUT", "DELETE"].includes(req.method)) {
+  if (["POST", "PUT", "DELETE"].includes(req.method)) {
     try {
       await verifyToken(req);
     } catch (err) {
       return res.status(401).json({ error: err.message });
     }
   }
-
 
   const checkPermission = async (userId, categoryId, action) => {
     const permission = await db("Permissions")
@@ -229,110 +227,113 @@ const handler = async (req, res) => {
     return permission[`can_${action}`];
   };
 
+  // GET /api/blogs
+  if (req.method === "GET") {
+    try {
+      let { id, link, category_id, pageSize = 10, currentPage = 1 } = req.query;
 
-// GET /api/blogs
-if (req.method === "GET") {
-  try {
-    let { id, link, category_id, pageSize = 10, currentPage = 1 } = req.query;
+      // category_id'yi normalize et (tekil veya dizi olabilir)
+      const categoryIds = Array.isArray(category_id)
+        ? category_id.map((id) => parseInt(id))
+        : category_id
+          ? [parseInt(category_id)]
+          : [];
 
-    // category_id'yi normalize et (tekil veya dizi olabilir)
-    const categoryIds = Array.isArray(category_id)
-      ? category_id.map(id => parseInt(id))
-      : category_id
-      ? [parseInt(category_id)]
-      : [];
+      // Sadece superadmin olmayan kullanıcılar için kategori kontrolü
+      // if (req.user?.role !== "superadmin") {
+      //   if (!categoryIds.length) {
+      //     return res.status(400).json({ error: "En az bir kategori seçilmelidir" });
+      //   }
 
-    // Sadece superadmin olmayan kullanıcılar için kategori kontrolü
-    if (req.user?.role !== "superadmin") {
-      if (!categoryIds.length) {
-        return res.status(400).json({ error: "En az bir kategori seçilmelidir" });
-      }
+      //   // Her kategori için okuma yetkisi kontrolü
+      //   const checks = await Promise.all(
+      //     categoryIds.map(catId => checkPermission(req.user.id, catId, "read"))
+      //   );
+      //   const allAllowed = checks.every(Boolean);
 
-      // Her kategori için okuma yetkisi kontrolü
-      const checks = await Promise.all(
-        categoryIds.map(catId => checkPermission(req.user.id, catId, "read"))
-      );
-      const allAllowed = checks.every(Boolean);
+      //   if (!allAllowed) {
+      //     return res.status(403).json({
+      //       error: "Bazı kategoriler için blog okuma yetkiniz yok.",
+      //     });
+      //   }
+      // }
 
-      if (!allAllowed) {
-        return res.status(403).json({
-          error: "Bazı kategoriler için blog okuma yetkiniz yok.",
-        });
-      }
-    }
+      const pageInt = Math.max(parseInt(pageSize), 1);
+      const currentPageInt = Math.max(parseInt(currentPage), 1);
 
-    const pageInt = Math.max(parseInt(pageSize), 1);
-    const currentPageInt = Math.max(parseInt(currentPage), 1);
+      // Tekil blog sorgusu (id veya link ile)
+      if (id || link) {
+        const blog = id
+          ? await db("Blogs").where({ id }).first()
+          : await db("Blogs").where({ link }).first();
 
-    // Tekil blog sorgusu (id veya link ile)
-    if (id || link) {
-      const blog = id
-        ? await db("Blogs").where({ id }).first()
-        : await db("Blogs").where({ link }).first();
+        if (!blog) {
+          return res.status(404).json({ error: "Blog bulunamadı" });
+        }
 
-      if (!blog) {
-        return res.status(404).json({ error: "Blog bulunamadı" });
-      }
+        const tags = await db("BlogTags").where({ blog_id: blog.id });
+        const category = blog.category_id
+          ? await db("Categories").where({ id: blog.category_id }).first()
+          : null;
 
-      const tags = await db("BlogTags").where({ blog_id: blog.id });
-      const category = blog.category_id
-        ? await db("Categories").where({ id: blog.category_id }).first()
-        : null;
-
-      return res.status(200).json({
-        ...blog,
-        category: category ? { id: category.id, name: category.name } : null,
-        tags: tags.map(t => t.tag),
-      });
-    }
-
-    // Çoklu blog listeleme (sayfalama + filtre)
-    let query = db("Blogs").orderBy("date", "desc");
-
-    if (categoryIds.length) {
-      query = query.whereIn("category_id", categoryIds);
-    }
-
-    // MSSQL uyumlu toplam sorgusu (orderBy YOK!)
-    const countQuery = db("Blogs");
-    if (categoryIds.length) {
-      countQuery.whereIn("category_id", categoryIds);
-    }
-    const totalData = await countQuery.count("* as count").first();
-
-    // Sayfalı blog verisi
-    const blogs = await query
-      .limit(pageInt)
-      .offset((currentPageInt - 1) * pageInt);
-
-    const allTags = await db("BlogTags");
-    const allCategories = await db("Categories");
-
-    const filtered = await Promise.all(
-      blogs.map(async blog => {
-        const category = allCategories.find(c => c.id === blog.category_id);
-        return {
+        return res.status(200).json({
           ...blog,
           category: category ? { id: category.id, name: category.name } : null,
-          tags: allTags.filter(t => t.blog_id === blog.id).map(t => t.tag),
-        };
-      })
-    );
+          tags: tags.map((t) => t.tag),
+        });
+      }
 
-    return res.status(200).json({
-      data: filtered,
-      pagination: {
-        pageSize: pageInt,
-        currentPage: currentPageInt,
-        total: totalData.count,
-        totalPages: Math.ceil(totalData.count / pageInt),
-      },
-    });
-  } catch (err) {
-    console.error("[GET /blogs]", err);
-    res.status(500).json({ error: "GET failed", details: err.message });
+      // Çoklu blog listeleme (sayfalama + filtre)
+      let query = db("Blogs").orderBy("date", "desc");
+
+      if (categoryIds.length) {
+        query = query.whereIn("category_id", categoryIds);
+      }
+
+      // MSSQL uyumlu toplam sorgusu (orderBy YOK!)
+      const countQuery = db("Blogs");
+      if (categoryIds.length) {
+        countQuery.whereIn("category_id", categoryIds);
+      }
+      const totalData = await countQuery.count("* as count").first();
+
+      // Sayfalı blog verisi
+      const blogs = await query
+        .limit(pageInt)
+        .offset((currentPageInt - 1) * pageInt);
+
+      const allTags = await db("BlogTags");
+      const allCategories = await db("Categories");
+
+      const filtered = await Promise.all(
+        blogs.map(async (blog) => {
+          const category = allCategories.find((c) => c.id === blog.category_id);
+          return {
+            ...blog,
+            category: category
+              ? { id: category.id, name: category.name }
+              : null,
+            tags: allTags
+              .filter((t) => t.blog_id === blog.id)
+              .map((t) => t.tag),
+          };
+        })
+      );
+
+      return res.status(200).json({
+        data: filtered,
+        pagination: {
+          pageSize: pageInt,
+          currentPage: currentPageInt,
+          total: totalData.count,
+          totalPages: Math.ceil(totalData.count / pageInt),
+        },
+      });
+    } catch (err) {
+      console.error("[GET /blogs]", err);
+      res.status(500).json({ error: "GET failed", details: err.message });
+    }
   }
-}
 
   //POST
   else if (req.method === "POST") {
@@ -351,13 +352,17 @@ if (req.method === "GET") {
     } = req.body;
 
     try {
-      // sadece superadmin olmayan kullanıcılar için 
+      // sadece superadmin olmayan kullanıcılar için
       if (req.user?.role !== "superadmin") {
         if (!category_id) {
           return res.status(400).json({ error: "Kategori seçilmelidir" });
         }
 
-        const allowed = await checkPermission(req.user.id, category_id, "create");
+        const allowed = await checkPermission(
+          req.user.id,
+          category_id,
+          "create"
+        );
         if (!allowed) {
           return res.status(403).json({
             error: "Bu kategori için blog oluşturma yetkiniz yok.",
@@ -396,14 +401,22 @@ if (req.method === "GET") {
     }
   }
 
-
   // PUT
   else if (req.method === "PUT") {
     if (!id) return res.status(400).json({ error: "ID gerekli" });
 
     const {
-      link, thumbnail, date, author, title, details, content,
-      category_id, tags = [], isactive, show_at_home,
+      link,
+      thumbnail,
+      date,
+      author,
+      title,
+      details,
+      content,
+      category_id,
+      tags = [],
+      isactive,
+      show_at_home,
     } = req.body;
 
     if (req.user?.role !== "superadmin") {
@@ -424,17 +437,28 @@ if (req.method === "GET") {
       if (!existing) return res.status(404).json({ error: "Blog bulunamadı" });
 
       if (req.user?.role !== "superadmin") {
-        const allowed = await checkPermission(req.user.id, existing.category_id, "update");
-        if (!allowed) return res.status(403).json({ error: "Yetkiniz yok (update)" });
+        const allowed = await checkPermission(
+          req.user.id,
+          existing.category_id,
+          "update"
+        );
+        if (!allowed)
+          return res.status(403).json({ error: "Yetkiniz yok (update)" });
       }
 
       await db.transaction(async (trx) => {
-        await trx("Blogs")
-          .where({ id })
-          .update({
-            link, thumbnail, date, author, title,
-            details, content, category_id, isactive, show_at_home
-          });
+        await trx("Blogs").where({ id }).update({
+          link,
+          thumbnail,
+          date,
+          author,
+          title,
+          details,
+          content,
+          category_id,
+          isactive,
+          show_at_home,
+        });
 
         await trx("BlogTags").where({ blog_id: id }).del();
         for (const tag of tags) {
@@ -466,7 +490,11 @@ if (req.method === "GET") {
 
       // 💡 Sadece superadmin değilse izin kontrolü yap
       if (req.user?.role !== "superadmin") {
-        const allowed = await checkPermission(req.user.id, blog.category_id, "delete");
+        const allowed = await checkPermission(
+          req.user.id,
+          blog.category_id,
+          "delete"
+        );
         if (!allowed) {
           return res.status(403).json({
             error: "Bu kategoriye ait blogu silme yetkiniz yok.",
@@ -482,11 +510,11 @@ if (req.method === "GET") {
       return res.status(200).json({ success: true });
     } catch (err) {
       console.error("[DELETE /blogs]", err);
-      return res.status(500).json({ error: "DELETE failed", details: err.message });
+      return res
+        .status(500)
+        .json({ error: "DELETE failed", details: err.message });
     }
   }
-}
-
+};
 
 export default withCors(handler);
-
