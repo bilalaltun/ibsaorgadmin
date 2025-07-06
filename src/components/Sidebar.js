@@ -3,11 +3,10 @@
 
 import {
   FaTachometerAlt,
-  FaUser,
+  FaUserCog,
   FaUsers,
   FaPhone,
   FaImages,
-  FaBoxOpen,
   FaLayerGroup,
   FaBlog,
   FaWrench,
@@ -22,7 +21,12 @@ import {
   FaFlag,
   FaLink,
   FaNewspaper,
-} from "react-icons/fa";
+  FaClock,
+  FaCalendarAlt,
+  FaGlobeEurope,
+  FaUserFriends,
+} from "react-icons/fa"; // Not: bazıları fa'da olabilir, gerektiğinde değiştir
+
 import { useRouter } from "next/navigation";
 
 export default function Sidebar({ toggleSidebar }) {
@@ -70,7 +74,7 @@ export default function Sidebar({ toggleSidebar }) {
             <FaUsers /> <span>Users</span>
           </li>
           <li onClick={() => handleNavigate("/team-members")}>
-            <FaUser /> <span>Team Members</span>
+            <FaUserCog /> <span>Team Members</span>
           </li>
           <li onClick={() => handleNavigate("/contact-details")}>
             <FaPhone /> <span>Contact Info</span>
@@ -78,9 +82,6 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/slider")}>
             <FaImages /> <span>Slider</span>
           </li>
-          {/* <li onClick={() => handleNavigate("/product")}>
-            <FaBoxOpen /> <span>Services</span>
-          </li> */}
           <li onClick={() => handleNavigate("/categories")}>
             <FaLayerGroup /> <span>Categories</span>
           </li>
@@ -91,16 +92,19 @@ export default function Sidebar({ toggleSidebar }) {
             <FaNewspaper /> <span>News</span>
           </li>
           <li onClick={() => handleNavigate("/events")}>
-            <FaBlog /> <span>Events</span>
+            <FaCalendarAlt /> <span>Events</span>
           </li>
           <li onClick={() => handleNavigate("/regions")}>
-            <FaBlog /> <span>Regions</span>
+            <FaGlobeEurope /> <span>Regions</span>
           </li>
           <li onClick={() => handleNavigate("/regions-members")}>
-            <FaBlog /> <span>Regions Members</span>
+            <FaUserFriends /> <span>Regions Members</span>
           </li>
           <li onClick={() => handleNavigate("/countries")}>
-            <FaBlog /> <span>Countries</span>
+            <FaFlag /> <span>Countries</span>
+          </li>
+          <li onClick={() => handleNavigate("/countdowns")}>
+            <FaClock /> <span>Countdowns</span>
           </li>
           <li onClick={() => handleNavigate("/form-data")}>
             <FaWpforms /> <span>Form Submissions</span>
@@ -108,21 +112,9 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/settings")}>
             <FaWrench /> <span>Site Settings</span>
           </li>
-          {/* <li onClick={() => handleNavigate("/languages")}>
-            <FaLanguage /> <span>Languages</span>
-          </li> */}
           <li onClick={() => handleNavigate("/menus")}>
             <FaListAlt /> <span>Menus</span>
           </li>
-          {/* <li onClick={() => handleNavigate("/pages")}>
-            <FaFileAlt /> <span>Pages</span>
-          </li> */}
-          {/* <li onClick={() => handleNavigate("/about")}>
-            <FaInfo /> <span>About Us</span>
-          </li>
-          <li onClick={() => handleNavigate("/homepage")}>
-            <FaHome /> <span>Homepage Sections</span>
-          </li> */}
           <li onClick={() => handleNavigate("/cerezler")}>
             <FaCookieBite /> <span>Cookies</span>
           </li>
