@@ -163,30 +163,50 @@ const handler = async (req, res) => {
       const { region_id, name, title } = req.query;
 
       if (id) {
-        const member = await db("RegionMembers").where({ id }).first();
+        const member = await db("RegionMembers as rm")
+          .leftJoin("Regions as r", "rm.region_id", "r.id")
+          .select("rm.*", "r.title as region_name")
+          .where("rm.id", id)
+          .first();
+
         if (!member) return res.status(404).json({ error: "Üye bulunamadı" });
         return res.status(200).json(member);
       }
 
-      const query = db("RegionMembers").where(function () {
-        if (region_id) this.where("region_id", region_id);
-        if (name) this.where("name", "like", `%${name}%`);
-        if (title) this.where("title", "like", `%${title}%`);
-      });
+      const query = db("RegionMembers as rm")
+        .leftJoin("Regions as r", "rm.region_id", "r.id")
+        .select("rm.*", "r.title as region_name")
+        .where(function () {
+          if (region_id) this.where("rm.region_id", region_id);
+          if (name) this.where("rm.name", "like", `%${name}%`);
+          if (title) this.where("rm.title", "like", `%${title}%`);
+        });
 
-      const members = await query.orderBy("created_at", "desc");
+      const members = await query.orderBy("rm.created_at", "desc");
+
       return res.status(200).json({ data: members });
     } catch (err) {
-      return res.status(500).json({ error: "GET failed", details: err.message });
+      return res
+        .status(500)
+        .json({ error: "GET failed", details: err.message });
     }
   }
 
   // POST: Yeni üye oluştur
   if (method === "POST") {
-    const { region_id, name, title, email, flag_url, isactive = true } = req.body;
+    const {
+      region_id,
+      name,
+      title,
+      email,
+      flag_url,
+      isactive = true,
+    } = req.body;
 
     if (!region_id || !name || !title) {
-      return res.status(400).json({ error: "region_id, name ve title zorunludur" });
+      return res
+        .status(400)
+        .json({ error: "region_id, name ve title zorunludur" });
     }
 
     try {
@@ -201,7 +221,9 @@ const handler = async (req, res) => {
       });
       return res.status(201).json({ success: true });
     } catch (err) {
-      return res.status(500).json({ error: "POST failed", details: err.message });
+      return res
+        .status(500)
+        .json({ error: "POST failed", details: err.message });
     }
   }
 
@@ -211,7 +233,9 @@ const handler = async (req, res) => {
     const { region_id, name, title, email, flag_url, isactive } = req.body;
 
     if (!region_id || !name || !title) {
-      return res.status(400).json({ error: "region_id, name ve title zorunludur" });
+      return res
+        .status(400)
+        .json({ error: "region_id, name ve title zorunludur" });
     }
 
     try {
@@ -221,11 +245,13 @@ const handler = async (req, res) => {
         title,
         email,
         flag_url,
-        isactive
+        isactive,
       });
       return res.status(200).json({ success: true });
     } catch (err) {
-      return res.status(500).json({ error: "PUT failed", details: err.message });
+      return res
+        .status(500)
+        .json({ error: "PUT failed", details: err.message });
     }
   }
 
@@ -235,15 +261,21 @@ const handler = async (req, res) => {
 
     try {
       const deleted = await db("RegionMembers").where({ id }).del();
-      if (!deleted) return res.status(404).json({ error: "Silinecek üye bulunamadı" });
+      if (!deleted)
+        return res.status(404).json({ error: "Silinecek üye bulunamadı" });
 
       return res.status(200).json({ success: true });
     } catch (err) {
-      return res.status(500).json({ error: "DELETE failed", details: err.message });
+      return res
+        .status(500)
+        .json({ error: "DELETE failed", details: err.message });
     }
   }
 
-  return res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]).status(405).end();
+  return res
+    .setHeader("Allow", ["GET", "POST", "PUT", "DELETE"])
+    .status(405)
+    .end();
 };
 
 export default withCors(handler);

@@ -39,7 +39,7 @@ export default async function handler(req, res) {
         import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
       const response = await fetch(
-        "https://aifdijital.com/api/File/mizrak-makine/upload",
+        "https://aifdijital.com/api/File/ibsa/upload",
         {
           method: "POST",
           headers: {
