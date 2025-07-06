@@ -21,7 +21,7 @@ export default function Layout({ children }) {
         <main style={{ flex: 1, padding: '1rem', backgroundColor: '#ecf0f1' }}>
           {children}
         </main>
-        <LiveChatBox /> {/* Sabit chat kutusu */}
+        {/* <LiveChatBox /> */}
       </div>
     </div>
   );

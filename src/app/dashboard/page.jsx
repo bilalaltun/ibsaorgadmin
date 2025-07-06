@@ -25,21 +25,21 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
 
   const weatherCodes = {
-    0: "Açık",
-    1: "Genel olarak açık",
-    2: "Parçalı bulutlu",
-    3: "Kapalı",
-    45: "Sisli",
-    48: "Yoğun sis",
-    51: "Çok hafif yağmur",
-    53: "Hafif yağmur",
-    55: "Yağmur",
-    61: "Hafif sağanak",
-    63: "Orta şiddetli sağanak",
-    65: "Şiddetli sağanak",
-    80: "Sağanak yağmur",
-    95: "Fırtına",
-    99: "Dolu ve fırtına",
+    0: "Clear",
+    1: "Mostly clear",
+    2: "Partly cloudy",
+    3: "Overcast",
+    45: "Foggy",
+    48: "Dense fog",
+    51: "Light drizzle",
+    53: "Light rain",
+    55: "Rain",
+    61: "Light showers",
+    63: "Moderate showers",
+    65: "Heavy showers",
+    80: "Rain showers",
+    95: "Storm",
+    99: "Hail and storm",
   };
 
   const fetchLogs = async () => {
@@ -48,7 +48,7 @@ export default function DashboardPage() {
       const data = await res.json();
       setLogs(data.data || []);
     } catch (err) {
-      console.error("Log verisi alınamadı:", err);
+      console.error("Failed to fetch logs:", err);
     }
   };
 
@@ -69,7 +69,7 @@ export default function DashboardPage() {
         desktopCount,
       });
     } catch (err) {
-      console.error("Tüm loglar alınamadı:", err);
+      console.error("Failed to fetch all logs:", err);
     }
   };
 
@@ -86,7 +86,7 @@ export default function DashboardPage() {
       setWeather({
         temperature: data.temperature,
         windspeed: data.windspeed,
-        description: weatherCodes[data.weathercode] ?? "Bilinmeyen",
+        description: weatherCodes[data.weathercode] ?? "Unknown",
       });
     };
 
@@ -106,9 +106,9 @@ export default function DashboardPage() {
         body: JSON.stringify({ prompt }),
       });
       const data = await res.json();
-      setResponse(data.content || "Bir çıktı alınamadı.");
+      setResponse(data.content || "No output generated.");
     } catch (err) {
-      setResponse("Hata oluştu.");
+      setResponse("An error occurred.");
     } finally {
       setLoading(false);
     }
@@ -121,27 +121,27 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className={styles.container}>
-        <h1 className={styles.title}>HIGHLIGHT VEBSAYTI İDARƏ PANELİ</h1>
+        <h1 className={styles.title}>IBSA ADMIN PANEL</h1>
 
         <div className={styles.cards}>
           <div className={styles.card}>
             <span>📦</span>
             <div>
-              <p>Ümumi Məhsul</p>
+              <p>Total Products</p>
               <strong>{stats?.product_count ?? "..."}</strong>
             </div>
           </div>
           <div className={styles.card}>
             <span>📝</span>
             <div>
-              <p>Ümumi Bloq</p>
+              <p>Total Blogs</p>
               <strong>{stats?.blog_count ?? "..."}</strong>
             </div>
           </div>
           <div className={styles.card}>
             <span>👥</span>
             <div>
-              <p>Ümumi İstifadəçi</p>
+              <p>Total Users</p>
               <strong>{stats?.user_count ?? "..."}</strong>
             </div>
           </div>
@@ -149,7 +149,7 @@ export default function DashboardPage() {
 
         <div className={styles.weather}>
           <div className={styles.weatherHeader}>
-            <h2>🌤 Bakı Hava Proqnozu</h2>
+            <h2>🌤 Baku Weather Forecast</h2>
             <span className={styles.badge}>
               {weather?.description ?? "..."}
             </span>
@@ -158,14 +158,14 @@ export default function DashboardPage() {
             <div className={styles.weatherItem}>
               <span>🌡</span>
               <div>
-                <p>Temperatur</p>
+                <p>Temperature</p>
                 <strong>{weather?.temperature ?? "..."}°C</strong>
               </div>
             </div>
             <div className={styles.weatherItem}>
               <span>💨</span>
               <div>
-                <p>Külək</p>
+                <p>Wind Speed</p>
                 <strong>{weather?.windspeed ?? "..."} m/s</strong>
               </div>
             </div>
@@ -176,28 +176,28 @@ export default function DashboardPage() {
           <div className={styles.card}>
             <span>📈</span>
             <div>
-              <p>Ümumi Ziyarət</p>
+              <p>Total Visits</p>
               <strong>{logStats.total}</strong>
             </div>
           </div>
           <div className={styles.card}>
             <span>📱</span>
             <div>
-              <p>Mobil Cihaz</p>
+              <p>Mobile Devices</p>
               <strong>{logStats.mobileCount}</strong>
             </div>
           </div>
           <div className={styles.card}>
             <span>🖥</span>
             <div>
-              <p>Masaüstü Cihaz</p>
+              <p>Desktop Devices</p>
               <strong>{logStats.desktopCount}</strong>
             </div>
           </div>
           <div className={styles.card}>
             <span>🔢</span>
             <div>
-              <p>Unikal IP</p>
+              <p>Unique IPs</p>
               <strong>{logStats.uniqueIps}</strong>
             </div>
           </div>
@@ -206,20 +206,20 @@ export default function DashboardPage() {
         <RechartsPanel allLogs={allLogs} />
 
         <div className={styles.visitorLogs}>
-          <h2>🧾 Son Ziyarətçilər</h2>
+          <h2>🧾 Latest Visitors</h2>
           <div className={styles.logTable}>
             <div className={styles.logHeader}>
               <span>IP</span>
-              <span>Şəhər</span>
-              <span>Ölkə</span>
-              <span>Səhifə</span>
-              <span>Müddət</span>
-              <span>Vaxt</span>
-              <span>Saat Qurşağı</span>
-              <span>Cihaz</span>
-              <span>Platforma</span>
+              <span>City</span>
+              <span>Country</span>
+              <span>Page</span>
+              <span>Duration</span>
+              <span>Time</span>
+              <span>Timezone</span>
+              <span>Device</span>
+              <span>Platform</span>
               <span>Bot?</span>
-              <span>Ekran İcazəsi</span>
+              <span>Screen</span>
               <span>Lat / Long</span>
             </div>
             {logs.map((log) => (
@@ -231,9 +231,9 @@ export default function DashboardPage() {
                 <span>{log.duration_seconds}s</span>
                 <span>{new Date(log.created_at).toLocaleString()}</span>
                 <span>{log.timezone}</span>
-                <span>{log.is_mobile ? "Mobil" : "Masaüstü"}</span>
+                <span>{log.is_mobile ? "Mobile" : "Desktop"}</span>
                 <span>{log.platform}</span>
-                <span>{log.is_bot ? "Bəli" : "Xeyr"}</span>
+                <span>{log.is_bot ? "Yes" : "No"}</span>
                 <span>{log.screen_resolution}</span>
                 <span>
                   {log.latitude}, {log.longitude}
@@ -241,24 +241,6 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
-
-        <div className={styles.generator}>
-          <h2>🧠 Məzmun Yaradılması</h2>
-          <textarea
-            placeholder="Əmr daxil edin..."
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-          />
-          <button onClick={handleGenerate} disabled={loading}>
-            {loading ? "Yaradılır..." : "Yarat"}
-          </button>
-          {response && (
-            <div className={styles.output}>
-              <pre>{response}</pre>
-              <button onClick={handleCopy}>Kopyala</button>
-            </div>
-          )}
         </div>
       </div>
     </Layout>
