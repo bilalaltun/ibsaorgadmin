@@ -90,7 +90,7 @@ export default function LoginPage() {
 
       <div className={styles.rightPane}>
         <div className={styles.logo}>
-          <img src="/images/logo.png" alt="Logo" className={styles.logoImg} />
+          <img src="/images/logo-dark.svg" alt="Logo" className={styles.logoImg} />
         </div>
 
         <h2 className={styles.title}>Admin Panel Login</h2>

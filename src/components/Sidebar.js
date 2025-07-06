@@ -21,6 +21,7 @@ import {
   FaShieldVirus,
   FaFlag,
   FaLink,
+  FaNewspaper,
 } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
@@ -77,9 +78,9 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/slider")}>
             <FaImages /> <span>Slider</span>
           </li>
-          <li onClick={() => handleNavigate("/product")}>
+          {/* <li onClick={() => handleNavigate("/product")}>
             <FaBoxOpen /> <span>Services</span>
-          </li>
+          </li> */}
           <li onClick={() => handleNavigate("/categories")}>
             <FaLayerGroup /> <span>Categories</span>
           </li>
@@ -87,29 +88,32 @@ export default function Sidebar({ toggleSidebar }) {
 
         <ul className="sidebar-section">
           <li onClick={() => handleNavigate("/blog")}>
-            <FaBlog /> <span>Blog</span>
+            <FaNewspaper /> <span>News</span>
           </li>
-          <li onClick={() => handleNavigate("/settings")}>
-            <FaWrench /> <span>Site Settings</span>
+          <li onClick={() => handleNavigate("/events")}>
+            <FaBlog /> <span>Events</span>
           </li>
           <li onClick={() => handleNavigate("/form-data")}>
             <FaWpforms /> <span>Form Submissions</span>
           </li>
-          <li onClick={() => handleNavigate("/languages")}>
-            <FaLanguage /> <span>Languages</span>
+          <li onClick={() => handleNavigate("/settings")}>
+            <FaWrench /> <span>Site Settings</span>
           </li>
+          {/* <li onClick={() => handleNavigate("/languages")}>
+            <FaLanguage /> <span>Languages</span>
+          </li> */}
           <li onClick={() => handleNavigate("/menus")}>
             <FaListAlt /> <span>Menus</span>
           </li>
-          <li onClick={() => handleNavigate("/pages")}>
+          {/* <li onClick={() => handleNavigate("/pages")}>
             <FaFileAlt /> <span>Pages</span>
-          </li>
-          <li onClick={() => handleNavigate("/about")}>
+          </li> */}
+          {/* <li onClick={() => handleNavigate("/about")}>
             <FaInfo /> <span>About Us</span>
           </li>
           <li onClick={() => handleNavigate("/homepage")}>
             <FaHome /> <span>Homepage Sections</span>
-          </li>
+          </li> */}
           <li onClick={() => handleNavigate("/cerezler")}>
             <FaCookieBite /> <span>Cookies</span>
           </li>
