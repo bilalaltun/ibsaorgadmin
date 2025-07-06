@@ -121,7 +121,7 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className={styles.container}>
-        <h1 className={styles.title}>HIGHLIGHT VEBSAYTI İDARƏ PANELİ</h1>
+        <h1 className={styles.title}>IBSA ADMIN PANEL</h1>
 
         <div className={styles.cards}>
           <div className={styles.card}>
@@ -243,23 +243,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className={styles.generator}>
-          <h2>🧠 Məzmun Yaradılması</h2>
-          <textarea
-            placeholder="Əmr daxil edin..."
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-          />
-          <button onClick={handleGenerate} disabled={loading}>
-            {loading ? "Yaradılır..." : "Yarat"}
-          </button>
-          {response && (
-            <div className={styles.output}>
-              <pre>{response}</pre>
-              <button onClick={handleCopy}>Kopyala</button>
-            </div>
-          )}
-        </div>
       </div>
     </Layout>
   );
