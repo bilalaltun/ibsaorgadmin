@@ -99,6 +99,9 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/regions-members")}>
             <FaBlog /> <span>Regions Members</span>
           </li>
+          <li onClick={() => handleNavigate("/countries")}>
+            <FaBlog /> <span>Countries</span>
+          </li>
           <li onClick={() => handleNavigate("/form-data")}>
             <FaWpforms /> <span>Form Submissions</span>
           </li>
