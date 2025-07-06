@@ -17,21 +17,21 @@ import {
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
-// Veriləri sahəyə görə qruplaşdırır (məsələn: şəhər, ölkə və s.)
+// Groups data by field (e.g. city, country, etc.)
 const groupByField = (logs, field) => {
   const map = {};
   logs.forEach((log) => {
-    const key = log[field] ?? "Bilinməyən";
+    const key = log[field] ?? "Unknown";
     map[key] = (map[key] || 0) + 1;
   });
   return Object.entries(map).map(([name, value]) => ({ name, value }));
 };
 
-// Zaman əsasında qrafik məlumatı hazırlayır
+// Prepares chart data based on time
 const getDurationData = (logs) => {
   const map = {};
   logs.forEach((log) => {
-    const time = new Date(log.created_at).toLocaleTimeString("tr-TR", {
+    const time = new Date(log.created_at).toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -42,10 +42,10 @@ const getDurationData = (logs) => {
 
 export default function RechartsPanel({ allLogs }) {
   const charts = [
-    { title: "Şəhər", data: groupByField(allLogs, "city") },
-    { title: "Ölkə", data: groupByField(allLogs, "country") },
-    { title: "Cihaz", data: groupByField(allLogs, "is_mobile") },
-    { title: "Saat Qurşağı", data: groupByField(allLogs, "timezone") },
+    { title: "City", data: groupByField(allLogs, "city") },
+    { title: "Country", data: groupByField(allLogs, "country") },
+    { title: "Device", data: groupByField(allLogs, "is_mobile") },
+    { title: "Timezone", data: groupByField(allLogs, "timezone") },
   ];
 
   const durationData = getDurationData(allLogs);
@@ -55,7 +55,7 @@ export default function RechartsPanel({ allLogs }) {
       <div className={styles.chartGrid}>
         {charts.map(({ title, data }, idx) => (
           <div className={styles.chartBox} key={idx}>
-            <h3>📊 {title} Üzrə Paylanma</h3>
+            <h3>📊 Distribution by {title}</h3>
             <PieChart width={300} height={300}>
               <Pie
                 data={data}
@@ -79,7 +79,7 @@ export default function RechartsPanel({ allLogs }) {
       </div>
 
       <div className={styles.lineChartBox}>
-        <h3>⏱ Saytda Qalma Müddəti</h3>
+        <h3>⏱ Time Spent on Site</h3>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={durationData}>
             <CartesianGrid strokeDasharray="3 3" />
