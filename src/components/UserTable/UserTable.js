@@ -41,12 +41,13 @@ export default function UserTable() {
 
   const handleDelete = async (id) => {
     const confirm = await Swal.fire({
-      title: "Silmek istiyor musun?",
+      title: "Are you sure you want to delete?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Evet, sil",
+      confirmButtonText: "Yes, delete",
     });
     if (!confirm.isConfirmed) return;
+
     const token = Cookies.get("token");
 
     await fetch(`/api/users?id=${id}`, {
@@ -56,14 +57,14 @@ export default function UserTable() {
       },
     });
     await fetchUsers();
-    Swal.fire("Silindi", "Kullanıcı silindi.", "success");
+    Swal.fire("Deleted", "User has been deleted.", "success");
   };
 
   const handleToggle = async (user) => {
     const updated = { ...user, isactive: !user.isactive };
 
     Swal.fire({
-      title: "Güncelleniyor...",
+      title: "Updating...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
@@ -82,16 +83,17 @@ export default function UserTable() {
       if (!res.ok) throw new Error();
 
       await fetchUsers();
-      Swal.fire("Başarılı", "Durum güncellendi.", "success");
+      Swal.fire("Success", "Status updated successfully.", "success");
     } catch {
-      Swal.fire("Hata", "Durum güncellenemedi.", "error");
+      Swal.fire("Error", "Failed to update status.", "error");
     }
   };
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.toolbar}>
         <div className={styles.leftControls}>
-          <label>Sayfada</label>
+          <label>Show</label>
           <select
             value={pageSize}
             onChange={(e) => {
@@ -103,22 +105,22 @@ export default function UserTable() {
               <option key={n}>{n}</option>
             ))}
           </select>
-          <label>kayıt göster</label>
+          <label>entries</label>
           <span className={styles.resultCount}>
-            Bulunan: <b>{filtered.length}</b> kayıt
+            Found: <b>{filtered.length}</b> users
           </span>
         </div>
 
         <div className={styles.rightControls}>
-          <label>Ara:</label>
+          <label>Search:</label>
           <input
             type="text"
-            placeholder="Başlık ara..."
+            placeholder="Search by username..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <Link href="/users/create">
-            <button className={styles.btnAdd}>YENİ EKLE</button>
+            <button className={styles.btnAdd}>ADD NEW</button>
           </Link>
         </div>
       </div>
@@ -127,9 +129,9 @@ export default function UserTable() {
         <thead>
           <tr>
             <th>#</th>
-            <th>Kullanıcı Adı</th>
-            <th>Aktif</th>
-            <th>İşlem</th>
+            <th>Username</th>
+            <th>Active</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>

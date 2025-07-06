@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Layout from "@/components/Layout";
 import Swal from "sweetalert2";
-import styles from "./styles.module.css"; // Ortak stil kullanımı
+import styles from "./styles.module.css"; // Shared styles
 import Cookies from "js-cookie";
 
 export default function CreateUserPage() {
@@ -28,14 +28,14 @@ export default function CreateUserPage() {
     if (!isFormValid()) {
       Swal.fire({
         icon: "warning",
-        title: "Eksik Bilgi",
-        text: "Kullanıcı adı ve şifre zorunludur.",
+        title: "Missing Information",
+        text: "Username and password are required.",
       });
       return;
     }
 
     Swal.fire({
-      title: "Kullanıcı ekleniyor...",
+      title: "Creating user...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
@@ -51,12 +51,12 @@ export default function CreateUserPage() {
         body: JSON.stringify(form),
       });
 
-      if (!res.ok) throw new Error("Kullanıcı eklenemedi.");
+      if (!res.ok) throw new Error("Failed to create user.");
 
       Swal.fire({
         icon: "success",
-        title: "Başarılı!",
-        text: "Kullanıcı başarıyla eklendi.",
+        title: "Success!",
+        text: "User has been created successfully.",
       });
 
       window.location.href = "/users";
@@ -64,8 +64,8 @@ export default function CreateUserPage() {
       console.error(err);
       Swal.fire({
         icon: "error",
-        title: "Hata",
-        text: "Ekleme sırasında bir hata oluştu.",
+        title: "Error",
+        text: "An error occurred while creating the user.",
       });
     }
   };
@@ -73,25 +73,25 @@ export default function CreateUserPage() {
   return (
     <Layout>
       <div className={styles.container}>
-        <h2 className={styles.title}>Yeni Kullanıcı Ekle</h2>
+        <h2 className={styles.title}>Add New User</h2>
         <form onSubmit={handleSubmit} className={styles.form}>
           <section className={styles.section}>
-            <label>Kullanıcı Adı</label>
+            <label>Username</label>
             <input
               type="text"
               className={styles.input}
               value={form.username}
               onChange={(e) => handleChange("username", e.target.value)}
-              placeholder="Kullanıcı Adı"
+              placeholder="Enter username"
             />
 
-            <label>Şifre</label>
+            <label>Password</label>
             <input
               type="text"
               className={styles.input}
               value={form.password}
               onChange={(e) => handleChange("password", e.target.value)}
-              placeholder="Şifre"
+              placeholder="Enter password"
             />
           </section>
 
@@ -100,7 +100,7 @@ export default function CreateUserPage() {
             className={"submitButton"}
             disabled={!isFormValid()}
           >
-            EKLE
+            CREATE
           </button>
         </form>
       </div>

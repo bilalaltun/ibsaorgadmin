@@ -25,7 +25,7 @@ export default function EditUserPage() {
     async function fetchUser() {
       try {
         const res = await fetch(`/api/users?id=${id}`);
-        if (!res.ok) throw new Error("Kullanıcı verisi alınamadı.");
+        if (!res.ok) throw new Error("Failed to fetch user data.");
         const data = await res.json();
         setForm({
           username: data.username,
@@ -35,7 +35,7 @@ export default function EditUserPage() {
         });
       } catch (err) {
         console.error(err);
-        setError("Kullanıcı bulunamadı.");
+        setError("User not found.");
       } finally {
         setLoading(false);
       }
@@ -58,14 +58,14 @@ export default function EditUserPage() {
     if (!isFormValid()) {
       Swal.fire({
         icon: "warning",
-        title: "Eksik Bilgi",
-        text: "Kullanıcı adı ve şifre zorunludur.",
+        title: "Missing Information",
+        text: "Username and password are required.",
       });
       return;
     }
 
     Swal.fire({
-      title: "Güncelleniyor...",
+      title: "Updating...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
@@ -81,19 +81,19 @@ export default function EditUserPage() {
         body: JSON.stringify(form),
       });
 
-      if (!res.ok) throw new Error("Güncelleme başarısız");
+      if (!res.ok) throw new Error("Update failed");
 
       Swal.fire({
         icon: "success",
-        title: "Başarılı!",
-        text: "Kullanıcı güncellendi.",
+        title: "Success!",
+        text: "User has been updated successfully.",
       }).then(() => router.push("/users"));
     } catch (err) {
       console.error(err);
       Swal.fire({
         icon: "error",
-        title: "Hata",
-        text: "Güncelleme sırasında bir sorun oluştu.",
+        title: "Error",
+        text: "An error occurred while updating the user.",
       });
     }
   };
@@ -101,19 +101,19 @@ export default function EditUserPage() {
   return (
     <Layout>
       <div className={styles.container}>
-        <h2 className={styles.title}>Kullanıcı Düzenle – #{id}</h2>
+        <h2 className={styles.title}>Edit User – #{id}</h2>
 
         {loading ? (
           <div className={"loadingSpinner"}>
             <div className={"spinner"} />
-            <p>İçerikler yükleniyor...</p>
+            <p>Loading content...</p>
           </div>
         ) : error ? (
           <p className={styles.error}>{error}</p>
         ) : (
           <form onSubmit={handleSubmit} className={styles.form}>
             <section className={styles.section}>
-              <label>Kullanıcı Adı</label>
+              <label>Username</label>
               <input
                 type="text"
                 className={styles.input}
@@ -121,7 +121,7 @@ export default function EditUserPage() {
                 onChange={(e) => handleChange("username", e.target.value)}
               />
 
-              <label>Şifre</label>
+              <label>Password</label>
               <input
                 type="text"
                 className={styles.input}
@@ -135,7 +135,7 @@ export default function EditUserPage() {
               className={"submitButton"}
               disabled={!isFormValid()}
             >
-              GÜNCELLE
+              UPDATE
             </button>
           </form>
         )}

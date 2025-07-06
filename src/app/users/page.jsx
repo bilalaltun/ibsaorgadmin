@@ -7,7 +7,7 @@ export default function ProductsPage() {
   return (
     <Layout>
       <div className="content">
-        <h2>Kullanıcılar</h2>
+        <h2>Users</h2>
         <UserTable />
       </div>
     </Layout>
