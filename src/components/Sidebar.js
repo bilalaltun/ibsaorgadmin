@@ -76,18 +76,10 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/team-members")}>
             <FaUserCog /> <span>Team Members</span>
           </li>
-          <li onClick={() => handleNavigate("/contact-details")}>
-            <FaPhone /> <span>Contact Info</span>
-          </li>
-          <li onClick={() => handleNavigate("/slider")}>
-            <FaImages /> <span>Slider</span>
-          </li>
+
           <li onClick={() => handleNavigate("/categories")}>
             <FaLayerGroup /> <span>Categories</span>
           </li>
-        </ul>
-
-        <ul className="sidebar-section">
           <li onClick={() => handleNavigate("/blog")}>
             <FaNewspaper /> <span>News</span>
           </li>
@@ -105,6 +97,15 @@ export default function Sidebar({ toggleSidebar }) {
           </li>
           <li onClick={() => handleNavigate("/countdowns")}>
             <FaClock /> <span>Countdowns</span>
+          </li>
+        </ul>
+
+        {/* <ul className="sidebar-section">
+          <li onClick={() => handleNavigate("/contact-details")}>
+            <FaPhone /> <span>Contact Info</span>
+          </li>
+          <li onClick={() => handleNavigate("/slider")}>
+            <FaImages /> <span>Slider</span>
           </li>
           <li onClick={() => handleNavigate("/form-data")}>
             <FaWpforms /> <span>Form Submissions</span>
@@ -127,7 +128,7 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/references")}>
             <FaLink /> <span>References</span>
           </li>
-        </ul>
+        </ul> */}
       </nav>
     </aside>
   );
