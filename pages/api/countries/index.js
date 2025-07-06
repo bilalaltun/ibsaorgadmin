@@ -70,7 +70,7 @@
  *                       example: 2
  *
  *   post:
- *     summary: Yeni ülke ekle
+ *     summary: Yeni ülke(leri) ekle
  *     tags: [Countries]
  *     security:
  *       - bearerAuth: []
@@ -79,10 +79,14 @@
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CountryInput'
+ *             oneOf:
+ *               - $ref: '#/components/schemas/CountryInput'
+ *               - type: array
+ *                 items:
+ *                   $ref: '#/components/schemas/CountryInput'
  *     responses:
  *       201:
- *         description: Ülke başarıyla eklendi
+ *         description: Ülke(ler) başarıyla eklendi
  *
  *   put:
  *     summary: Ülke bilgilerini güncelle
@@ -127,80 +131,33 @@
  *     Country:
  *       type: object
  *       properties:
- *         id:
- *           type: integer
- *           example: 1
- *         name:
- *           type: string
- *           example: "Azerbaijan"
- *         federation_name:
- *           type: string
- *           example: "Azerbaijan Football Federation"
- *         directory:
- *           type: string
- *           example: "Central Office Baku"
- *         address:
- *           type: string
- *           example: "28 May Street No:10, Baku"
- *         phone:
- *           type: string
- *           example: "+994-12-345-67-89"
- *         email:
- *           type: string
- *           example: "contact@aff.org.az"
- *         isactive:
- *           type: boolean
- *           example: true
- *         flag_url:
- *           type: string
- *           example: "/flags/az.png"
- *         region_id:
- *           type: integer
- *           example: 2
- *         region_name:
- *           type: string
- *           example: "Europe"
- *         created_at:
- *           type: string
- *           format: date-time
- *           example: "2025-06-01T12:00:00Z"
+ *         id: { type: integer, example: 1 }
+ *         name: { type: string, example: "Azerbaijan" }
+ *         federation_name: { type: string, example: "Azerbaijan Football Federation" }
+ *         directory: { type: string, example: "Central Office Baku" }
+ *         address: { type: string, example: "28 May Street No:10, Baku" }
+ *         phone: { type: string, example: "+994-12-345-67-89" }
+ *         email: { type: string, example: "contact@aff.org.az" }
+ *         isactive: { type: boolean, example: true }
+ *         flag_url: { type: string, example: "/flags/az.png" }
+ *         region_id: { type: integer, example: 2 }
+ *         region_name: { type: string, example: "Europe" }
+ *         created_at: { type: string, format: date-time, example: "2025-06-01T12:00:00Z" }
  *
  *     CountryInput:
  *       type: object
- *       required:
- *         - name
- *         - federation_name
- *         - isactive
+ *       required: [name, federation_name, isactive]
  *       properties:
- *         name:
- *           type: string
- *           example: "Azerbaijan"
- *         federation_name:
- *           type: string
- *           example: "Azerbaijan Football Federation"
- *         directory:
- *           type: string
- *           example: "Central Office Baku"
- *         address:
- *           type: string
- *           example: "28 May Street No:10, Baku"
- *         phone:
- *           type: string
- *           example: "+994-12-345-67-89"
- *         email:
- *           type: string
- *           example: "contact@aff.org.az"
- *         isactive:
- *           type: boolean
- *           example: true
- *         flag_url:
- *           type: string
- *           example: "/flags/az.png"
- *         region_id:
- *           type: integer
- *           example: 2
+ *         name: { type: string, example: "Azerbaijan" }
+ *         federation_name: { type: string, example: "Azerbaijan Football Federation" }
+ *         directory: { type: string, example: "Central Office Baku" }
+ *         address: { type: string, example: "28 May Street No:10, Baku" }
+ *         phone: { type: string, example: "+994-12-345-67-89" }
+ *         email: { type: string, example: "contact@aff.org.az" }
+ *         isactive: { type: boolean, example: true }
+ *         flag_url: { type: string, example: "/flags/az.png" }
+ *         region_id: { type: integer, example: 2 }
  */
-
 
 import db from "../../../lib/db";
 import { withCors } from "../../../lib/withCors";
@@ -217,70 +174,100 @@ const handler = async (req, res) => {
     }
   }
 
-// GET
-if (req.method === "GET") {
-  try {
-    const { pageSize = 10, currentPage = 1, region_id } = req.query;
-    const pageInt = parseInt(pageSize);
-    const currentPageInt = parseInt(currentPage);
+  if (req.method === "GET") {
+    try {
+      const { pageSize = 10, currentPage = 1, region_id } = req.query;
+      const pageInt = parseInt(pageSize);
+      const currentPageInt = parseInt(currentPage);
 
-    // Tekil ülke
-    if (id) {
-      const country = await db("Countries")
+      if (id) {
+        const country = await db("Countries")
+          .leftJoin("Regions", "Countries.region_id", "Regions.id")
+          .select("Countries.*", "Regions.name as region_name")
+          .where("Countries.id", id)
+          .first();
+
+        if (!country) return res.status(404).json({ error: "Ülke bulunamadı" });
+        return res.status(200).json(country);
+      }
+
+      const query = db("Countries")
         .leftJoin("Regions", "Countries.region_id", "Regions.id")
-        .select("Countries.*", "Regions.name as region_name")
-        .where("Countries.id", id)
-        .first();
+        .select("Countries.*", "Regions.name as region_name");
 
-      if (!country) return res.status(404).json({ error: "Ülke bulunamadı" });
-      return res.status(200).json(country);
+      if (region_id) {
+        query.where("Countries.region_id", parseInt(region_id));
+      }
+
+      const totalQuery = db("Countries");
+      if (region_id) {
+        totalQuery.where("region_id", parseInt(region_id));
+      }
+
+      const totalResult = await totalQuery.count("* as count").first();
+      const totalCount = totalResult?.count || 0;
+      const totalPages = Math.ceil(totalCount / pageInt);
+
+      const countries = await query
+        .orderBy("Countries.id", "desc")
+        .limit(pageInt)
+        .offset((currentPageInt - 1) * pageInt);
+
+      return res.status(200).json({
+        data: countries,
+        pagination: {
+          pageSize: pageInt,
+          currentPage: currentPageInt,
+          total: totalCount,
+          totalPages,
+        },
+        filters: {
+          ...(region_id && { region_id: parseInt(region_id) }),
+        },
+      });
+    } catch (err) {
+      console.error("[GET /countries]", err);
+      return res.status(500).json({ error: "GET failed", details: err.message });
     }
-
-    // Listeleme + filtre
-    const query = db("Countries")
-      .leftJoin("Regions", "Countries.region_id", "Regions.id")
-      .select("Countries.*", "Regions.name as region_name");
-
-    if (region_id) {
-      query.where("Countries.region_id", parseInt(region_id));
-    }
-
-    // MSSQL uyumlu: count ayrı sorguda yapılır
-    const totalQuery = db("Countries");
-    if (region_id) {
-      totalQuery.where("region_id", parseInt(region_id));
-    }
-
-    const totalResult = await totalQuery.count("* as count").first();
-    const totalCount = totalResult?.count || 0;
-    const totalPages = Math.ceil(totalCount / pageInt);
-
-    const countries = await query
-      .orderBy("Countries.id", "desc")
-      .limit(pageInt)
-      .offset((currentPageInt - 1) * pageInt);
-
-    return res.status(200).json({
-      data: countries,
-      pagination: {
-        pageSize: pageInt,
-        currentPage: currentPageInt,
-        total: totalCount,
-        totalPages,
-      },
-      filters: {
-        ...(region_id && { region_id: parseInt(region_id) }),
-      },
-    });
-  } catch (err) {
-    console.error("[GET /countries]", err);
-    return res.status(500).json({ error: "GET failed", details: err.message });
   }
-}
 
-
-  // POST
   else if (req.method === "POST") {
+    const input = req.body;
+    const now = new Date();
+
+    // Çoklu kayıt (array) kontrolü
+    if (Array.isArray(input)) {
+      const invalid = input.find(
+        (item) => !item.name || !item.federation_name || item.isactive === undefined
+      );
+
+      if (invalid) {
+        return res.status(400).json({ error: "Bazı kayıtlar zorunlu alanları içermiyor" });
+      }
+
+      try {
+        const insertData = input.map((item) => ({
+          name: item.name,
+          federation_name: item.federation_name,
+          directory: item.directory,
+          address: item.address,
+          phone: item.phone,
+          email: item.email,
+          isactive: item.isactive,
+          flag_url: item.flag_url,
+          region_id: item.region_id || null,
+          created_at: now,
+        }));
+
+        await db("Countries").insert(insertData);
+        return res.status(201).json({ success: true, inserted: insertData.length });
+      } catch (err) {
+        console.error("[POST /countries - array]", err);
+        return res.status(500).json({ error: "POST (array) failed", details: err.message });
+      }
+    }
+
+    // Tekil kayıt
     const {
       name,
       federation_name,
@@ -291,7 +278,7 @@ if (req.method === "GET") {
       isactive,
       flag_url,
       region_id,
-    } = req.body;
+    } = input;
 
     if (!name || !federation_name || isactive === undefined) {
       return res.status(400).json({ error: "Zorunlu alanlar eksik" });
@@ -308,7 +295,7 @@ if (req.method === "GET") {
         isactive,
         flag_url,
         region_id: region_id || null,
-        created_at: new Date(),
+        created_at: now,
       });
 
       return res.status(201).json({ success: true });
@@ -318,7 +305,6 @@ if (req.method === "GET") {
     }
   }
 
-  // PUT
   else if (req.method === "PUT") {
     if (!id) return res.status(400).json({ error: "ID gerekli" });
 
@@ -357,7 +343,6 @@ if (req.method === "GET") {
     }
   }
 
-  // DELETE
   else if (req.method === "DELETE") {
     if (!id) return res.status(400).json({ error: "ID gerekli" });
 
@@ -370,7 +355,6 @@ if (req.method === "GET") {
     }
   }
 
-  // Unsupported
   else {
     res.status(405).json({ error: "Method not allowed" });
   }
