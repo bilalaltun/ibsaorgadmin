@@ -12,53 +12,51 @@ export default function EditCatalogPage() {
   const router = useRouter();
 
   const [form, setForm] = useState({
-    name: '',
-    order: 100000,
+    name: "",
     isactive: true,
   });
 
+  const [error, setError] = useState("");
+
   useEffect(() => {
-    async function fetchCatalog() {
+    async function fetchCategory() {
       try {
         const res = await fetch(`/api/categories?id=${id}`);
-        if (!res.ok) throw new Error("Məlumat alına bilmədi.");
+        if (!res.ok) throw new Error("Failed to fetch category.");
         const data = await res.json();
         setForm({
-          order: data.order,
-          name: data.name,
+          name: data.name || "",
           isactive: data.isactive ?? true,
         });
       } catch (err) {
-        console.error("Kateqoriya məlumatı alına bilmədi:", err);
-        setError("Kateqoriya tapılmadı.");
+        console.error("Failed to load category:", err);
+        setError("Category not found.");
       }
     }
 
-    fetchCatalog();
+    fetchCategory();
   }, [id]);
 
-  const handleLangTitleChange = (lang, value) => {
-    setForm((prev) => ({
-      ...prev,
-      name: {
-        ...prev.name,
-        [lang]: value,
-      },
-    }));
+  const handleChange = (key, value) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     Swal.fire({
-      title: "Yenilənir...",
+      title: "Updating...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
+
     const payload = {
+      name: form.name,
       order: form.order,
       isactive: form.isactive,
-      title: form.name,
+      subcategories: [], // always send as empty
     };
+
     try {
       const token = Cookies.get("token");
       const res = await fetch(`/api/categories?id=${id}`, {
@@ -69,18 +67,20 @@ export default function EditCatalogPage() {
         },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Yenilənmə uğursuz oldu.");
+
+      if (!res.ok) throw new Error("Update failed");
+
       Swal.fire({
         icon: "success",
-        title: "Uğurlu!",
-        text: "Kateqoriya yeniləndi.",
+        title: "Success",
+        text: "Category updated successfully.",
       }).then(() => router.push("/categories"));
     } catch (err) {
       console.error(err);
       Swal.fire({
         icon: "error",
-        title: "Xəta",
-        text: "Yeniləmə zamanı xəta baş verdi.",
+        title: "Error",
+        text: "An error occurred while updating the category.",
       });
     }
   };
@@ -88,22 +88,20 @@ export default function EditCatalogPage() {
   return (
     <Layout>
       <div className={styles.container}>
-        <h2 className={styles.title}>Kateqoriyanı Redaktə Et</h2>
+        <h2 className={styles.title}>Edit Category</h2>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.section}>
-            <label>Başlıq </label>
-            <input
-              type="text"
-              value={form.name || ""}
-              onChange={(e) =>
-                setForm((data) => ({ ...data, name: e.target.value }))
-              }
-            />
-          </div>
+          <label>Category Name</label>
+          <input
+            className={styles.input}
+            type="text"
+            value={form.name}
+            onChange={(e) => handleChange("name", e.target.value)}
+            required
+          />
 
-          <button type="submit" className={"submitButton"}>
-            YENİLƏ
+          <button type="submit" className="submitButton">
+            UPDATE
           </button>
         </form>
       </div>

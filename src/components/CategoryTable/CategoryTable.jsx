@@ -5,7 +5,6 @@ import Link from "next/link";
 import Swal from "sweetalert2";
 import { FaPen, FaTrash } from "react-icons/fa";
 import styles from "./styles.module.css";
-import langs from "@/data/langs";
 import Cookies from "js-cookie";
 
 export default function CategoryTable() {
@@ -14,7 +13,7 @@ export default function CategoryTable() {
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortField, setSortField] = useState("title");
+  const [sortField, setSortField] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
 
   useEffect(() => {
@@ -23,11 +22,11 @@ export default function CategoryTable() {
         const res = await fetch(
           `/api/categories?currentpage=${currentPage}&pagesize=${pageSize}`
         );
-        if (!res.ok) throw new Error("Məlumat alına bilmədi");
+        if (!res.ok) throw new Error("Failed to fetch data");
         const data = await res.json();
         setCategories(data.data);
       } catch {
-        setError("Kateqoriya məlumatları alına bilmədi.");
+        setError("Failed to load category data.");
       }
     }
     fetchCategories();
@@ -35,17 +34,16 @@ export default function CategoryTable() {
 
   const filtered = useMemo(() => {
     return categories?.length > 0
-      ? categories.filter((c) => {
-          const title = c.title?.[langs[0]] || "";
-          return title.toLowerCase().includes(search.toLowerCase());
-        })
+      ? categories.filter((c) =>
+          c.name.toLowerCase().includes(search.toLowerCase())
+        )
       : [];
   }, [search, categories]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
-      const valA = a.title?.[langs[0]]?.toLowerCase() || "";
-      const valB = b.title?.[langs[0]]?.toLowerCase() || "";
+      const valA = (a[sortField] || "").toLowerCase();
+      const valB = (b[sortField] || "").toLowerCase();
 
       if (valA < valB) return sortAsc ? -1 : 1;
       if (valA > valB) return sortAsc ? 1 : -1;
@@ -70,15 +68,16 @@ export default function CategoryTable() {
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: "Bu kateqoriya silinsin?",
-      text: "Bu əməliyyat geri alına bilməz!",
+      title: "Delete this category?",
+      text: "This action cannot be undone!",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Bəli, sil",
-      cancelButtonText: "İmtina",
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
     });
 
     if (!result.isConfirmed) return;
+
     try {
       const token = Cookies.get("token");
       const res = await fetch(`/api/categories?id=${id}`, {
@@ -87,11 +86,12 @@ export default function CategoryTable() {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (!res.ok) throw new Error("Silinmə uğursuz oldu");
+
+      if (!res.ok) throw new Error("Delete failed");
       setCategories((prev) => prev.filter((c) => c.id !== id));
-      Swal.fire("Silindi!", "Kateqoriya uğurla silindi.", "success");
+      Swal.fire("Deleted!", "Category deleted successfully.", "success");
     } catch {
-      Swal.fire("Xəta", "Silinmə zamanı problem baş verdi.", "error");
+      Swal.fire("Error", "An error occurred while deleting.", "error");
     }
   };
 
@@ -101,7 +101,7 @@ export default function CategoryTable() {
     <div className={styles.tableWrapper}>
       <div className={styles.toolbar}>
         <div className={styles.leftControls}>
-          <label>Səhifədə</label>
+          <label>Show</label>
           <select
             value={pageSize}
             onChange={(e) => {
@@ -113,25 +113,22 @@ export default function CategoryTable() {
               <option key={n}>{n}</option>
             ))}
           </select>
-          <label>yazı göstər</label>
+          <label>entries</label>
           <span className={styles.resultCount}>
-            Tapılan: <b>{filtered.length}</b> yazı
+            Total: <b>{filtered.length}</b> categories
           </span>
         </div>
 
         <div className={styles.rightControls}>
-          <label>Axtar:</label>
+          <label>Search:</label>
           <input
             type="text"
-            placeholder="Başlıq üzrə axtar..."
+            placeholder="Search by name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <Link href="/categories/sort">
-            <button className={styles.btnAdd}>SIRALA</button>
-          </Link>
           <Link href="/categories/create">
-            <button className={styles.btnAdd}>YENİ ƏLAVƏ ET</button>
+            <button className={styles.btnAdd}>ADD NEW</button>
           </Link>
         </div>
       </div>
@@ -140,15 +137,17 @@ export default function CategoryTable() {
         <thead>
           <tr>
             <th>#</th>
-            <th>Başlıq</th>
-            <th>Əməliyyat</th>
+            <th onClick={() => handleSort("name")}>
+              Name
+            </th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {paginated.length === 0 ? (
             <tr>
-              <td colSpan={4} className={styles.noData}>
-                Heç bir yazı tapılmadı.
+              <td colSpan={3} className={styles.noData}>
+                No records found.
               </td>
             </tr>
           ) : (

@@ -10,6 +10,30 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
 }
 
+.input,
+.textarea {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.input:focus,
+.textarea:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+.fieldset {
+  border: 1px solid #eee;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
 .page-title {
   font-size: 1.8rem;
   font-weight: 700;
@@ -125,7 +149,9 @@
   border-radius: 10px;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 114, 255, 0.4);
-  transition: background 0.3s ease, transform 0.2s ease;
+  transition:
+    background 0.3s ease,
+    transform 0.2s ease;
 }
 
 .submitButton:hover {

@@ -6,7 +6,7 @@ export default function Page() {
   return (
     <Layout>
       <div>
-        <h2>Kateqoriyalar</h2>
+        <h2>Categories</h2>
         <div className="grid">
           <CategoryTable />
         </div>
