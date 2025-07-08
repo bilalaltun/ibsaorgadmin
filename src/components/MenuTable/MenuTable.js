@@ -14,26 +14,25 @@ export default function MenuTable() {
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  async function fetchMenus() {
+  const fetchMenus = async () => {
     try {
       const res = await fetch("/api/menus");
-      if (!res.ok) throw new Error("Veri alınamadı.");
+      if (!res.ok) throw new Error("Failed to fetch data.");
       const data = await res.json();
       setMenus(data.data);
     } catch {
-      Swal.fire("Hata", "Menüler yüklenemedi", "error");
+      Swal.fire("Error", "Failed to load menus", "error");
     }
-  }
+  };
 
   useEffect(() => {
     fetchMenus();
   }, []);
 
   const filtered = useMemo(() => {
-    return menus.filter((menu) => {
-      const title = menu.titles?.tr || Object.values(menu.titles || {})[0] || "";
-      return title.toLowerCase().includes(search.toLowerCase());
-    });
+    return menus.filter((menu) =>
+      (menu.title || "").toLowerCase().includes(search.toLowerCase())
+    );
   }, [search, menus]);
 
   const paginated = useMemo(() => {
@@ -45,11 +44,11 @@ export default function MenuTable() {
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: "Silmek istediğinize emin misiniz?",
+      title: "Are you sure you want to delete this?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Evet, sil",
-      cancelButtonText: "İptal",
+      confirmButtonText: "Yes, delete it",
+      cancelButtonText: "Cancel",
     });
 
     if (!result.isConfirmed) return;
@@ -62,18 +61,20 @@ export default function MenuTable() {
           Authorization: `Bearer ${token}`,
         },
       });
+
       if (!res.ok) throw new Error();
       setMenus((prev) => prev.filter((menu) => menu.id !== id));
-      Swal.fire("Silindi", "Menü silindi", "success");
+      Swal.fire("Deleted", "Menu has been deleted", "success");
     } catch {
-      Swal.fire("Hata", "Silme başarısız", "error");
+      Swal.fire("Error", "Failed to delete menu", "error");
     }
   };
 
   const handleToggle = async (menu) => {
     const updated = { ...menu, isactive: !menu.isactive };
+
     Swal.fire({
-      title: "Güncelleniyor...",
+      title: "Updating...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
@@ -91,9 +92,9 @@ export default function MenuTable() {
 
       if (!res.ok) throw new Error();
       await fetchMenus();
-      Swal.fire("Başarılı", "Menü durumu güncellendi.", "success");
-    } catch (err) {
-      Swal.fire("Hata", "Güncelleme başarısız", "error");
+      Swal.fire("Success", "Menu status updated", "success");
+    } catch {
+      Swal.fire("Error", "Update failed", "error");
     }
   };
 
@@ -101,7 +102,7 @@ export default function MenuTable() {
     <div className={styles.tableWrapper}>
       <div className={styles.toolbar}>
         <div className={styles.leftControls}>
-          <label>Sayfada</label>
+          <label>Show</label>
           <select
             value={pageSize}
             onChange={(e) => {
@@ -113,23 +114,27 @@ export default function MenuTable() {
               <option key={n}>{n}</option>
             ))}
           </select>
-          <label>kayıt göster</label>
+          <label>records per page</label>
           <span className={styles.resultCount}>
-            Toplam: <b>{filtered.length}</b> kayıt
+            Total: <b>{filtered.length}</b> records
           </span>
         </div>
 
         <div className={styles.rightControls}>
-          <label>Ara:</label>
+          <label>Search:</label>
           <input
             type="text"
-            placeholder="Menü başlığı ara..."
+            placeholder="Search menu title..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <Link href="/menus/create">
-            <button className={styles.btnAdd}>YENİ EKLE</button>
-          </Link>
+          {menus.length > 0 ? (
+            <></>
+          ) : (
+            <Link href="/menus/create">
+              <button className={styles.btnAdd}>ADD NEW</button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -137,35 +142,24 @@ export default function MenuTable() {
         <thead>
           <tr>
             <th>#</th>
-            <th>Başlık</th>
+            <th>Title</th>
             <th>Link</th>
-            <th>Aktif</th>
-            <th>İşlem</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {paginated.length === 0 ? (
             <tr>
               <td colSpan={5} className={styles.noData}>
-                Kayıt yok
+                No records found
               </td>
             </tr>
           ) : (
             paginated.map((menu, i) => (
               <tr key={menu.id}>
                 <td>{(currentPage - 1) * pageSize + i + 1}</td>
-                <td>{menu.titles?.tr || Object.values(menu.titles || {})[0]}</td>
+                <td>{menu.title || "—"}</td>
                 <td>{menu.url}</td>
-                <td>
-                  <label className={styles.switch}>
-                    <input
-                      type="checkbox"
-                      checked={menu.isactive ?? true}
-                      onChange={() => handleToggle(menu)}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </td>
                 <td>
                   <Link href={`/menus/content-edit/${menu.id}`}>
                     <button className={styles.editBtn}>
