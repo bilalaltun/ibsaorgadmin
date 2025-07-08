@@ -25,6 +25,7 @@ import {
   FaCalendarAlt,
   FaGlobeEurope,
   FaUserFriends,
+  FaSms,
 } from "react-icons/fa"; // Not: bazıları fa'da olabilir, gerektiğinde değiştir
 
 import { useRouter } from "next/navigation";
@@ -98,12 +99,15 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/countdowns")}>
             <FaClock /> <span>Countdowns</span>
           </li>
-        </ul>
-
-        {/* <ul className="sidebar-section">
+          <li onClick={() => handleNavigate("/countdowns")}>
+            <FaSms /> <span>Notifications</span>
+          </li>
           <li onClick={() => handleNavigate("/contact-details")}>
             <FaPhone /> <span>Contact Info</span>
           </li>
+        </ul>
+
+        {/* <ul className="sidebar-section">
           <li onClick={() => handleNavigate("/slider")}>
             <FaImages /> <span>Slider</span>
           </li>

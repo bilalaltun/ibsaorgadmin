@@ -16,18 +16,21 @@ export default function LocationTable() {
   async function fetchLocations() {
     try {
       const res = await fetch("/api/contacts");
-      if (!res.ok) throw new Error("Veri alınamadı.");
+      if (!res.ok) throw new Error("Failed to fetch data.");
       const data = await res.json();
       setLocations(data.data);
-    } catch {}
+    } catch {
+      Swal.fire("Error", "Failed to fetch locations.", "error");
+    }
   }
+
   useEffect(() => {
     fetchLocations();
   }, []);
 
   const filtered = useMemo(() => {
     return locations.filter((item) =>
-      (item.title?.tr || "").toLowerCase().includes(search.toLowerCase())
+      (item.title || "").toLowerCase().includes(search.toLowerCase())
     );
   }, [search, locations]);
 
@@ -40,11 +43,11 @@ export default function LocationTable() {
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: "Silmek istediğinize emin misiniz?",
+      title: "Are you sure you want to delete this?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Evet, sil",
-      cancelButtonText: "İptal",
+      confirmButtonText: "Yes, delete it",
+      cancelButtonText: "Cancel",
     });
 
     if (!result.isConfirmed) return;
@@ -59,38 +62,31 @@ export default function LocationTable() {
       });
       if (!res.ok) throw new Error();
       setLocations((prev) => prev.filter((loc) => loc.id !== id));
-      Swal.fire("Silindi", "Lokasyon silindi", "success");
+      Swal.fire("Deleted", "Location has been deleted", "success");
     } catch {
-      Swal.fire("Hata", "Silme başarısız", "error");
+      Swal.fire("Error", "Failed to delete location", "error");
     }
   };
 
-  const handleToggle = async (user) => {
-    // `title` ve `address` alanlarını dönüştür
-    const convertLangObjectToArray = (obj) =>
-      Object.entries(obj || {}).map(([langCode, value]) => ({
-        langCode,
-        value,
-      }));
-
+  const handleToggle = async (loc) => {
     const updated = {
-      id: user.id,
-      gmail: user.gmail,
-      isactive: !user.isactive,
-      title: convertLangObjectToArray(user.title),
-      address: convertLangObjectToArray(user.address),
-      phones: user.phones || [],
+      id: loc.id,
+      gmail: loc.gmail,
+      isactive: !loc.isactive,
+      title: loc.title,
+      address: loc.address,
+      phones: loc.phones || [],
     };
 
     Swal.fire({
-      title: "Güncelleniyor...",
+      title: "Updating...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
 
     try {
       const token = Cookies.get("token");
-      const res = await fetch(`/api/contacts?id=${user.id}`, {
+      const res = await fetch(`/api/contacts?id=${loc.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -102,10 +98,10 @@ export default function LocationTable() {
       if (!res.ok) throw new Error();
 
       await fetchLocations();
-      Swal.fire("Başarılı", "Durum güncellendi.", "success");
+      Swal.fire("Success", "Status updated successfully.", "success");
     } catch (err) {
       console.error(err);
-      Swal.fire("Hata", "Durum güncellenemedi.", "error");
+      Swal.fire("Error", "Failed to update status.", "error");
     }
   };
 
@@ -113,7 +109,7 @@ export default function LocationTable() {
     <div className={styles.tableWrapper}>
       <div className={styles.toolbar}>
         <div className={styles.leftControls}>
-          <label>Sayfada</label>
+          <label>Show</label>
           <select
             value={pageSize}
             onChange={(e) => {
@@ -125,22 +121,22 @@ export default function LocationTable() {
               <option key={n}>{n}</option>
             ))}
           </select>
-          <label>kayıt göster</label>
+          <label>entries per page</label>
           <span className={styles.resultCount}>
-            Toplam: <b>{filtered.length}</b> kayıt
+            Total: <b>{filtered.length}</b> records
           </span>
         </div>
 
         <div className={styles.rightControls}>
-          <label>Ara:</label>
+          <label>Search:</label>
           <input
             type="text"
-            placeholder="Başlık (TR) ara..."
+            placeholder="Search title..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <Link href="/contact-details/create">
-            <button className={styles.btnAdd}>YENİ EKLE</button>
+            <button className={styles.btnAdd}>ADD NEW</button>
           </Link>
         </div>
       </div>
@@ -149,27 +145,27 @@ export default function LocationTable() {
         <thead>
           <tr>
             <th>#</th>
-            <th>Başlık</th>
-            <th>Adres</th>
+            <th>Title</th>
+            <th>Address</th>
             <th>Email</th>
-            <th>Telefonlar</th>
-            <th>Aktif</th>
-            <th>İşlem</th>
+            <th>Phones</th>
+            <th>Active</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {paginated.length === 0 ? (
             <tr>
               <td colSpan={7} className={styles.noData}>
-                Kayıt yok
+                No records found
               </td>
             </tr>
           ) : (
             paginated.map((item, i) => (
               <tr key={item.id}>
                 <td>{(currentPage - 1) * pageSize + i + 1}</td>
-                <td>{item.title?.tr || "-"}</td>
-                <td>{item.address?.tr || "-"}</td>
+                <td>{item.title || "-"}</td>
+                <td>{item.address || "-"}</td>
                 <td>{item.gmail || "-"}</td>
                 <td>
                   <ul className={styles.phoneList}>
@@ -188,7 +184,6 @@ export default function LocationTable() {
                     <span className={styles.slider}></span>
                   </label>
                 </td>
-
                 <td>
                   <Link href={`/contact-details/content-edit/${item.id}`}>
                     <button className={styles.editBtn}>

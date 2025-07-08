@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import Swal from "sweetalert2";
@@ -13,37 +13,10 @@ export default function CreateContactPage() {
   const [form, setForm] = useState({
     gmail: "",
     isactive: true,
+    title: "",
+    address: "",
     phones: [{ phone_number: "" }],
   });
-
-  const [languages, setLanguages] = useState([]);
-  const [activeLang, setActiveLang] = useState("");
-  const [multiLangData, setMultiLangData] = useState({});
-
-  // Dilleri API'den çek
-  useEffect(() => {
-    async function fetchLanguages() {
-      try {
-        const res = await fetch("/api/languages");
-        if (!res.ok) throw new Error("Diller alınamadı.");
-        const data = await res.json();
-
-        const langs = data.map((l) => l.name);
-        setLanguages(langs);
-        setActiveLang(langs[0]);
-
-        const initialData = langs.reduce((acc, lang) => {
-          acc[lang] = { title: "", address: "" };
-          return acc;
-        }, {});
-        setMultiLangData(initialData);
-      } catch (err) {
-        console.error("Dil verisi alınamadı:", err);
-      }
-    }
-
-    fetchLanguages();
-  }, []);
 
   const handleFormChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -69,21 +42,12 @@ export default function CreateContactPage() {
     }));
   };
 
-  const handleLangChange = (lang, key, value) => {
-    setMultiLangData((prev) => ({
-      ...prev,
-      [lang]: { ...prev[lang], [key]: value },
-    }));
-  };
-
   const isFormValid = () => {
     return (
-      form.gmail.trim() &&
-      form.phones.every((p) => p.phone_number.trim()) &&
-      languages.every(
-        (lang) =>
-          multiLangData[lang].title.trim() && multiLangData[lang].address.trim()
-      )
+      form.gmail.trim() !== "" &&
+      form.title.trim() !== "" &&
+      form.address.trim() !== "" &&
+      form.phones.every((p) => p.phone_number.trim() !== "")
     );
   };
 
@@ -91,29 +55,19 @@ export default function CreateContactPage() {
     e.preventDefault();
 
     if (!isFormValid()) {
-      Swal.fire("Uyarı", "Tüm alanlar eksiksiz doldurulmalıdır.", "warning");
+      Swal.fire("Warning", "All fields must be filled in.", "warning");
       return;
     }
-
-    const title = languages.map((lang) => ({
-      value: multiLangData[lang].title,
-      langCode: lang,
-    }));
-
-    const address = languages.map((lang) => ({
-      value: multiLangData[lang].address,
-      langCode: lang,
-    }));
 
     const payload = {
       gmail: form.gmail,
       isactive: form.isactive,
+      title: form.title,
+      address: form.address,
       phones: form.phones,
-      title,
-      address,
     };
 
-    Swal.fire({ title: "Kaydediliyor...", didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: "Saving...", didOpen: () => Swal.showLoading() });
 
     try {
       const token = Cookies.get("token");
@@ -128,20 +82,18 @@ export default function CreateContactPage() {
 
       if (!res.ok) throw new Error();
 
-      Swal.fire("Başarılı", "İletişim noktası eklendi.", "success").then(() =>
+      Swal.fire("Success", "Contact location added successfully.", "success").then(() =>
         router.push("/contact-details")
       );
     } catch {
-      Swal.fire("Hata", "Veri kaydedilemedi.", "error");
+      Swal.fire("Error", "Failed to save data.", "error");
     }
   };
-
-  const current = multiLangData[activeLang] || {};
 
   return (
     <Layout>
       <div className={styles.container}>
-        <h2 className={styles.title}>Yeni Lokasyon Ekle</h2>
+        <h2 className={styles.title}>Add New Location</h2>
         <form onSubmit={handleSubmit} className={styles.form}>
           <section className={styles.section}>
             <label>Email</label>
@@ -152,7 +104,7 @@ export default function CreateContactPage() {
               onChange={(e) => handleFormChange("gmail", e.target.value)}
             />
 
-            <label>Telefonlar</label>
+            <label>Phone Numbers</label>
             {form.phones.map((p, i) => (
               <div key={i} className={styles.phoneRow}>
                 <input
@@ -161,7 +113,7 @@ export default function CreateContactPage() {
                   className={styles.input}
                   style={{ marginBottom: "10px" }}
                   onChange={(e) => handlePhoneChange(i, e.target.value)}
-                  placeholder={`Telefon ${i + 1}`}
+                  placeholder={`Phone ${i + 1}`}
                 />
                 {form.phones.length > 1 && (
                   <button type="button" onClick={() => removePhone(i)}>
@@ -175,52 +127,32 @@ export default function CreateContactPage() {
               onClick={addPhone}
               className={styles.addPhoneBtn}
             >
-              + Yeni Telefon
+              + Add Phone
             </button>
+
+            <label>Title</label>
+            <input
+              type="text"
+              className={styles.input}
+              value={form.title}
+              onChange={(e) => handleFormChange("title", e.target.value)}
+            />
+
+            <label>Address</label>
+            <textarea
+              rows={2}
+              className={styles.input}
+              value={form.address}
+              onChange={(e) => handleFormChange("address", e.target.value)}
+            />
           </section>
-
-          {languages.length > 0 && (
-            <section className={styles.section}>
-              <div className={styles.langTabs}>
-                {languages.map((lang) => (
-                  <button
-                    key={lang}
-                    type="button"
-                    onClick={() => setActiveLang(lang)}
-                    className={activeLang === lang ? styles.active : ""}
-                  >
-                    {lang.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-
-              <label>Başlık ({activeLang.toUpperCase()})</label>
-              <input
-                value={current.title}
-                className={styles.input}
-                onChange={(e) =>
-                  handleLangChange(activeLang, "title", e.target.value)
-                }
-              />
-
-              <label>Adres ({activeLang.toUpperCase()})</label>
-              <textarea
-                rows={2}
-                value={current.address}
-                className={styles.input}
-                onChange={(e) =>
-                  handleLangChange(activeLang, "address", e.target.value)
-                }
-              />
-            </section>
-          )}
 
           <button
             type="submit"
             className={styles.submitButton}
             disabled={!isFormValid()}
           >
-            EKLE
+            ADD
           </button>
         </form>
       </div>

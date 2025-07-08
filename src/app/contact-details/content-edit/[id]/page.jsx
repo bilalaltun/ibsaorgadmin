@@ -13,49 +13,32 @@ export default function ContactEditPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [languages, setLanguages] = useState([]);
-  const [activeLang, setActiveLang] = useState("");
-  const [multiLangData, setMultiLangData] = useState({});
   const [form, setForm] = useState({
     gmail: "",
     isactive: true,
     phones: [],
+    title: "",
+    address: "",
   });
 
-  // Veri çekme
   useEffect(() => {
     async function fetchContact() {
       try {
         const res = await fetch(`/api/contacts?id=${id}`);
-        if (!res.ok) throw new Error("Veri alınamadı");
+        if (!res.ok) throw new Error("Failed to fetch data.");
         const json = await res.json();
         const data = json.data;
 
-        // Ana alanlar
         setForm({
           gmail: data.gmail || "",
           isactive: data.isactive ?? true,
           phones: data.phones?.length ? data.phones : [{ phone_number: "" }],
+          title: data.title || "",
+          address: data.address || "",
         });
-
-        // Çok dilli alanlar
-        const titles = data.title || {};
-        const addresses = data.address || {};
-        const langs = Object.keys(titles); // aktif diller burada
-        setLanguages(langs);
-        setActiveLang(langs[0]);
-
-        const langState = langs.reduce((acc, lang) => {
-          acc[lang] = {
-            title: titles[lang] || "",
-            address: addresses[lang] || "",
-          };
-          return acc;
-        }, {});
-        setMultiLangData(langState);
       } catch (err) {
-        console.error("❌ Veri alınamadı:", err);
-        setError("Veri yüklenemedi.");
+        console.error("❌ Failed to fetch contact:", err);
+        setError("Could not load data.");
       } finally {
         setLoading(false);
       }
@@ -88,22 +71,12 @@ export default function ContactEditPage() {
     }));
   };
 
-  const handleLangChange = (lang, key, value) => {
-    setMultiLangData((prev) => ({
-      ...prev,
-      [lang]: { ...prev[lang], [key]: value },
-    }));
-  };
-
   const isFormValid = () => {
     return (
       form.gmail.trim() &&
-      form.phones.every((p) => p.phone_number.trim()) &&
-      languages.every(
-        (lang) =>
-          multiLangData[lang].title.trim() &&
-          multiLangData[lang].address.trim()
-      )
+      form.title.trim() &&
+      form.address.trim() &&
+      form.phones.every((p) => p.phone_number.trim())
     );
   };
 
@@ -111,25 +84,19 @@ export default function ContactEditPage() {
     e.preventDefault();
 
     if (!isFormValid()) {
-      Swal.fire("Uyarı", "Tüm alanlar eksiksiz doldurulmalıdır.", "warning");
+      Swal.fire("Warning", "All fields must be filled in.", "warning");
       return;
     }
-
-    const convertToLangArray = (key) =>
-      languages.map((lang) => ({
-        langCode: lang,
-        value: multiLangData[lang][key],
-      }));
 
     const payload = {
       gmail: form.gmail,
       isactive: form.isactive,
       phones: form.phones,
-      title: convertToLangArray("title"),
-      address: convertToLangArray("address"),
+      title: form.title,
+      address: form.address,
     };
 
-    Swal.fire({ title: "Güncelleniyor...", didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: "Updating...", didOpen: () => Swal.showLoading() });
 
     try {
       const token = Cookies.get("token");
@@ -144,32 +111,29 @@ export default function ContactEditPage() {
 
       if (!res.ok) throw new Error();
 
-      Swal.fire("Başarılı", "İletişim bilgisi güncellendi.", "success").then(() =>
+      Swal.fire("Success", "Contact updated successfully.", "success").then(() =>
         router.push("/contact-details")
       );
     } catch (err) {
       console.error(err);
-      Swal.fire("Hata", "Güncelleme başarısız oldu.", "error");
+      Swal.fire("Error", "Update failed.", "error");
     }
   };
-
-  const current = multiLangData[activeLang] || {};
 
   return (
     <Layout>
       <div className={styles.container}>
-        <h2 className={styles.title}>İletişim Bilgisi Düzenle #{id}</h2>
+        <h2 className={styles.title}>Edit Contact #{id}</h2>
 
         {loading ? (
           <div className={"loadingSpinner"}>
             <div className={"spinner"} />
-            <p>Yükleniyor...</p>
+            <p>Loading...</p>
           </div>
         ) : error ? (
           <p className={styles.errorText}>{error}</p>
         ) : (
           <form onSubmit={handleSubmit} className={styles.form}>
-            {/* Genel Alanlar */}
             <section className={styles.section}>
               <label>Email</label>
               <input
@@ -179,7 +143,7 @@ export default function ContactEditPage() {
                 onChange={(e) => handleFormChange("gmail", e.target.value)}
               />
 
-              <label>Telefonlar</label>
+              <label>Phone Numbers</label>
               {form.phones.map((p, i) => (
                 <div key={i} className={styles.phoneRow}>
                   <input
@@ -187,7 +151,7 @@ export default function ContactEditPage() {
                     value={p.phone_number}
                     className={styles.input}
                     onChange={(e) => handlePhoneChange(i, e.target.value)}
-                    placeholder={`Telefon ${i + 1}`}
+                    placeholder={`Phone ${i + 1}`}
                   />
                   {form.phones.length > 1 && (
                     <button type="button" onClick={() => removePhone(i)}>
@@ -201,53 +165,32 @@ export default function ContactEditPage() {
                 onClick={addPhone}
                 className={styles.addPhoneBtn}
               >
-                + Yeni Telefon
+                + Add Phone
               </button>
+
+              <label>Title</label>
+              <input
+                type="text"
+                className={styles.input}
+                value={form.title}
+                onChange={(e) => handleFormChange("title", e.target.value)}
+              />
+
+              <label>Address</label>
+              <textarea
+                rows={2}
+                className={styles.input}
+                value={form.address}
+                onChange={(e) => handleFormChange("address", e.target.value)}
+              />
             </section>
-
-            {/* Çok Dilli Alanlar */}
-            {languages.length > 0 && (
-              <section className={styles.section}>
-                <div className={styles.langTabs}>
-                  {languages.map((lang) => (
-                    <button
-                      key={lang}
-                      type="button"
-                      onClick={() => setActiveLang(lang)}
-                      className={activeLang === lang ? styles.active : ""}
-                    >
-                      {lang.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-
-                <label>Başlık ({activeLang.toUpperCase()})</label>
-                <input
-                  className={styles.input}
-                  value={current.title}
-                  onChange={(e) =>
-                    handleLangChange(activeLang, "title", e.target.value)
-                  }
-                />
-
-                <label>Adres ({activeLang.toUpperCase()})</label>
-                <textarea
-                  rows={2}
-                  className={styles.input}
-                  value={current.address}
-                  onChange={(e) =>
-                    handleLangChange(activeLang, "address", e.target.value)
-                  }
-                />
-              </section>
-            )}
 
             <button
               type="submit"
               className={styles.submitButton}
               disabled={!isFormValid()}
             >
-              GÜNCELLE
+              UPDATE
             </button>
           </form>
         )}
