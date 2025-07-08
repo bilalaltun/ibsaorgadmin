@@ -111,8 +111,8 @@ export default function ContactEditPage() {
 
       if (!res.ok) throw new Error();
 
-      Swal.fire("Success", "Contact updated successfully.", "success").then(() =>
-        router.push("/contact-details")
+      Swal.fire("Success", "Contact updated successfully.", "success").then(
+        () => router.push("/contact-details")
       );
     } catch (err) {
       console.error(err);

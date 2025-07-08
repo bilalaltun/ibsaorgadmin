@@ -135,9 +135,6 @@ export default function LocationTable() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <Link href="/contact-details/create">
-            <button className={styles.btnAdd}>ADD NEW</button>
-          </Link>
         </div>
       </div>
 
@@ -149,7 +146,6 @@ export default function LocationTable() {
             <th>Address</th>
             <th>Email</th>
             <th>Phones</th>
-            <th>Active</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -175,27 +171,11 @@ export default function LocationTable() {
                   </ul>
                 </td>
                 <td>
-                  <label className={styles.switch}>
-                    <input
-                      type="checkbox"
-                      checked={item.isactive}
-                      onChange={() => handleToggle(item)}
-                    />
-                    <span className={styles.slider}></span>
-                  </label>
-                </td>
-                <td>
                   <Link href={`/contact-details/content-edit/${item.id}`}>
                     <button className={styles.editBtn}>
                       <FaPen />
                     </button>
                   </Link>
-                  <button
-                    className={styles.deleteBtn}
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    <FaTrash />
-                  </button>
                 </td>
               </tr>
             ))
