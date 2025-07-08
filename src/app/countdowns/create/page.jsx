@@ -90,7 +90,6 @@ export default function CreateCountdownPage() {
           <label>Link (optional)</label>
           <input
             className={styles.input}
-            type="url"
             value={form.link}
             onChange={(e) => handleChange("link", e.target.value)}
             placeholder="https://example.com"

@@ -22,16 +22,6 @@ export default function EditTeamMemberPage() {
     isactive: true,
   });
 
-  const isFormValid = () => {
-    return (
-      form.name.trim() &&
-      form.position.trim() &&
-      form.email.trim() &&
-      form.photo_url.trim() &&
-      form.flag_url.trim()
-    );
-  };
-
   useEffect(() => {
     async function fetchMember() {
       try {
@@ -57,11 +47,6 @@ export default function EditTeamMemberPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!isFormValid()) {
-      Swal.fire("Warning", "All fields are required.", "warning");
-      return;
-    }
 
     Swal.fire({
       title: "Updating...",
@@ -145,11 +130,7 @@ export default function EditTeamMemberPage() {
             }
           />
 
-          <button
-            type="submit"
-            className="submitButton"
-            disabled={!isFormValid()}
-          >
+          <button type="submit" className="submitButton">
             UPDATE
           </button>
         </form>
