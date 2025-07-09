@@ -26,6 +26,7 @@ import {
   FaGlobeEurope,
   FaUserFriends,
   FaSms,
+  FaPage4,
 } from "react-icons/fa"; // Not: bazıları fa'da olabilir, gerektiğinde değiştir
 
 import { useRouter } from "next/navigation";
@@ -109,7 +110,7 @@ export default function Sidebar({ toggleSidebar }) {
             <FaListAlt /> <span>Menus</span>
           </li>
           <li onClick={() => handleNavigate("/pages")}>
-            <FaImages /> <span>Pages</span>
+            <FaWpforms /> <span>Pages</span>
           </li>
         </ul>
 
