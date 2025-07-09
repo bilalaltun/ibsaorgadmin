@@ -13,106 +13,66 @@ export default function EditReferansPage() {
   const router = useRouter();
   const imageRef = useRef();
 
-  const [languages, setLanguages] = useState([]); // örn: ['tr', 'en', 'ar']
   const [form, setForm] = useState({
     img: "",
-    name: {},
+    name: "",
     isactive: true,
     show_at_home: true,
   });
-  const [activeLang, setActiveLang] = useState("tr");
+
   const [loading, setLoading] = useState(true);
 
-  // Dil listesini çek
-  useEffect(() => {
-    async function fetchLanguages() {
-      try {
-        const res = await fetch("/api/languages");
-        const data = await res.json();
-        const langs = data.map((l) => l.name); // ['tr', 'en', 'ar']
-        setLanguages(langs);
-        setActiveLang(langs[0] || "tr");
-      } catch {
-        Swal.fire("Hata", "Diller alınamadı", "error");
-      }
-    }
-
-    fetchLanguages();
-  }, []);
-
-  // Referans verisini çek
+  // Fetch existing data
   useEffect(() => {
     async function fetchReferans() {
       try {
         const res = await fetch(`/api/references?id=${id}`);
-        if (!res.ok) throw new Error("Veri alınamadı.");
-        const json = await res.json()
+        if (!res.ok) throw new Error("Failed to fetch data.");
+        const json = await res.json();
         const data = json.data;
-
-        // Dil eksiklerini tamamla
-        const filledName = {};
-        languages.forEach((lang) => {
-          filledName[lang] = data.name?.[lang] || "";
-        });
 
         setForm({
           img: data.img || "",
-          name: filledName,
+          name: data.name || "",
           isactive: data.isactive ?? true,
           show_at_home: data.show_at_home ?? true,
         });
       } catch (err) {
-        Swal.fire("Hata", "Veri alınamadı.", "error");
+        Swal.fire("Error", "Failed to load Partner data.", "error");
       } finally {
         setLoading(false);
       }
     }
 
-    if (languages.length > 0) {
-      fetchReferans();
-    }
-  }, [id, languages]);
+    fetchReferans();
+  }, [id]);
 
   const handleChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleLangChange = (lang, value) => {
-    setForm((prev) => ({
-      ...prev,
-      name: {
-        ...prev.name,
-        [lang]: value,
-      },
-    }));
-  };
-
-  const isFormValid = () =>
-    form.img && languages.every((lang) => form.name[lang]?.trim());
+  const isFormValid = () => form.img && form.name.trim().length > 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!isFormValid()) {
-      Swal.fire("Uyarı", "Tüm dillerdeki isim alanları doldurulmalı.", "warning");
+      Swal.fire("Warning", "Please fill in all fields.", "warning");
       return;
     }
 
+    const payload = {
+      img: form.img,
+      name: form.name,
+      isactive: form.isactive,
+      show_at_home: true,
+    };
+
     Swal.fire({
-      title: "Güncelleniyor...",
+      title: "Updating...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
-
-    const payload = {
-      img: form.img,
-      isactive: form.isactive,
-      show_at_home: true,
-      name: Object.entries(form.name).map(([langCode, value]) => ({
-        langCode,
-        value,
-      })),
-    };
 
     try {
       const token = Cookies.get("token");
@@ -127,55 +87,40 @@ export default function EditReferansPage() {
 
       if (!res.ok) throw new Error();
 
-      Swal.fire("Başarılı", "Referans güncellendi.", "success").then(() => {
+      Swal.fire("Success", "Partner has been updated.", "success").then(() => {
         router.push("/references");
       });
     } catch {
-      Swal.fire("Hata", "Güncelleme başarısız.", "error");
+      Swal.fire("Error", "Update failed.", "error");
     }
   };
 
   return (
     <Layout>
       <div className={styles.container}>
-        <h2 className={styles.title}>Referans Düzenle #{id}</h2>
+        <h2 className={styles.title}>Edit Patner #{id}</h2>
 
         {loading ? (
-          <div className="loadingSpinner">Yükleniyor...</div>
+          <div className="loadingSpinner">Loading...</div>
         ) : (
           <form onSubmit={handleSubmit} className={styles.form}>
-            <label>Görsel</label>
+            <label>Image</label>
             <UploadField
               ref={imageRef}
               type="image"
               accept="image/*"
               value={form.img}
               onChange={(url) => handleChange("img", url)}
-              label="Görsel Seç"
+              label="Select Image"
             />
 
-            <label>İsimler</label>
-            <div className={styles.langTabs}>
-              {languages.map((lang) => (
-                <button
-                  key={lang}
-                  type="button"
-                  className={`${styles.tabButton} ${
-                    activeLang === lang ? styles.active : ""
-                  }`}
-                  onClick={() => setActiveLang(lang)}
-                >
-                  {lang.toUpperCase()}
-                </button>
-              ))}
-            </div>
-
+            <label>Name</label>
             <input
               type="text"
               className={styles.input}
-              placeholder={`${activeLang.toUpperCase()} İsim`}
-              value={form.name[activeLang] || ""}
-              onChange={(e) => handleLangChange(activeLang, e.target.value)}
+              placeholder="Partner Name"
+              value={form.name}
+              onChange={(e) => handleChange("name", e.target.value)}
             />
 
             <button
@@ -183,7 +128,7 @@ export default function EditReferansPage() {
               className={styles.submitButton}
               disabled={!isFormValid()}
             >
-              GÜNCELLE
+              UPDATE
             </button>
           </form>
         )}

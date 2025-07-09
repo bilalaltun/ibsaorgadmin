@@ -9,13 +9,6 @@ import { FaPen, FaTrash, FaSortUp, FaSortDown } from "react-icons/fa";
 import styles from "./styles.module.css";
 import Cookies from "js-cookie";
 
-// Yardımcı fonksiyon: name objesini diziye çevir
-const convertToArrayFormat = (obj) =>
-  Object.entries(obj || {}).map(([langCode, value]) => ({
-    langCode,
-    value,
-  }));
-
 export default function ReferansTable() {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
@@ -28,11 +21,11 @@ export default function ReferansTable() {
     async function fetchItems() {
       try {
         const res = await fetch("/api/references");
-        if (!res.ok) throw new Error("Veri alınamadı.");
+        if (!res.ok) throw new Error("Failed to fetch data.");
         const data = await res.json();
         setItems(data.data);
       } catch {
-        setError("Referanslar alınamadı.");
+        setError("Failed to load references.");
       }
     }
     fetchItems();
@@ -40,14 +33,14 @@ export default function ReferansTable() {
 
   const filtered = useMemo(() => {
     return items.filter((item) =>
-      (item.name?.tr || "").toLowerCase().includes(search.toLowerCase())
+      (item.name || "").toLowerCase().includes(search.toLowerCase())
     );
   }, [search, items]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
-      const nameA = a.name?.tr?.toLowerCase() || "";
-      const nameB = b.name?.tr?.toLowerCase() || "";
+      const nameA = a.name?.toLowerCase() || "";
+      const nameB = b.name?.toLowerCase() || "";
       if (nameA < nameB) return sortAsc ? -1 : 1;
       if (nameA > nameB) return sortAsc ? 1 : -1;
       return 0;
@@ -63,11 +56,11 @@ export default function ReferansTable() {
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: "Silmek istediğinize emin misiniz?",
+      title: "Are you sure you want to delete this reference?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Evet, sil",
-      cancelButtonText: "İptal",
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
     });
 
     if (!result.isConfirmed) return;
@@ -82,22 +75,22 @@ export default function ReferansTable() {
       });
       if (!res.ok) throw new Error();
       setItems((prev) => prev.filter((i) => i.id !== id));
-      Swal.fire("Silindi", "Referans silindi", "success");
+      Swal.fire("Deleted", "Reference has been deleted", "success");
     } catch {
-      Swal.fire("Hata", "Silme başarısız", "error");
+      Swal.fire("Error", "Failed to delete reference", "error");
     }
   };
 
   const handleToggle = async (item) => {
     const updated = {
       img: item.img,
-      name: convertToArrayFormat(item.name),
+      name: item.name,
       isactive: !item.isactive,
-      show_at_home: true, // her zaman true gönderiyoruz
+      show_at_home: true,
     };
 
     Swal.fire({
-      title: "Güncelleniyor...",
+      title: "Updating...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
@@ -113,7 +106,7 @@ export default function ReferansTable() {
         body: JSON.stringify(updated),
       });
 
-      if (!res.ok) throw new Error("Güncelleme hatası");
+      if (!res.ok) throw new Error("Update failed");
 
       setItems((prev) =>
         prev.map((p) =>
@@ -123,7 +116,7 @@ export default function ReferansTable() {
 
       Swal.close();
     } catch {
-      Swal.fire("Hata", "Aktiflik durumu güncellenemedi.", "error");
+      Swal.fire("Error", "Failed to update status.", "error");
     }
   };
 
@@ -131,7 +124,7 @@ export default function ReferansTable() {
     <div className={styles.tableWrapper}>
       <div className={styles.toolbar}>
         <div className={styles.leftControls}>
-          <label>Sayfada</label>
+          <label>Show</label>
           <select
             value={pageSize}
             onChange={(e) => {
@@ -143,22 +136,22 @@ export default function ReferansTable() {
               <option key={n}>{n}</option>
             ))}
           </select>
-          <label>kayıt göster</label>
+          <label>entries per page</label>
           <span className={styles.resultCount}>
-            Toplam: <b>{filtered.length}</b> kayıt
+            Total: <b>{filtered.length}</b> records
           </span>
         </div>
 
         <div className={styles.rightControls}>
-          <label>Ara:</label>
+          <label>Search:</label>
           <input
             type="text"
-            placeholder="İsim ara..."
+            placeholder="Search by name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <Link href="/references/create">
-            <button className={styles.btnAdd}>YENİ EKLE</button>
+            <button className={styles.btnAdd}>ADD NEW</button>
           </Link>
         </div>
       </div>
@@ -167,19 +160,19 @@ export default function ReferansTable() {
         <thead>
           <tr>
             <th>#</th>
-            <th>Görsel</th>
+            <th>Image</th>
             <th onClick={() => setSortAsc(!sortAsc)}>
-              İsim {sortAsc ? <FaSortUp /> : <FaSortDown />}
+              Name {sortAsc ? <FaSortUp /> : <FaSortDown />}
             </th>
-            <th>Aktif</th>
-            <th>İşlem</th>
+            <th>Active</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {paginated.length === 0 ? (
             <tr>
               <td colSpan={6} className={styles.noData}>
-                Kayıt yok
+                No data found.
               </td>
             </tr>
           ) : (
@@ -190,14 +183,14 @@ export default function ReferansTable() {
                   {item.img && (
                     <Image
                       src={item.img}
-                      alt="Referans"
+                      alt="Reference"
                       width={70}
                       height={50}
                       unoptimized
                     />
                   )}
                 </td>
-                <td>{item.name?.tr || "-"}</td>
+                <td>{item.name || "-"}</td>
                 <td>
                   <label className={styles.switch}>
                     <input

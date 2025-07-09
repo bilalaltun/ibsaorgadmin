@@ -112,6 +112,9 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/pages")}>
             <FaWpforms /> <span>Pages</span>
           </li>
+          <li onClick={() => handleNavigate("/references")}>
+            <FaLink /> <span>Partners</span>
+          </li>
         </ul>
 
         {/* <ul className="sidebar-section">
@@ -131,11 +134,9 @@ export default function Sidebar({ toggleSidebar }) {
             <FaShieldVirus /> <span>Privacy Policy</span>
           </li>
           <li onClick={() => handleNavigate("/banner")}>
-            <FaFlag /> <span>Banner</span>
+             <FaFlag /> <span>Banner</span>
           </li>
-          <li onClick={() => handleNavigate("/references")}>
-            <FaLink /> <span>References</span>
-          </li>
+     
         </ul> */}
       </nav>
     </aside>

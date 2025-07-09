@@ -6,7 +6,7 @@ export default function Page() {
   return (
     <Layout>
       <div>
-        <h2>Referanslar</h2>
+        <h2>Partners</h2>
         <div className="grid">
           <ReferenceTable />
         </div>
