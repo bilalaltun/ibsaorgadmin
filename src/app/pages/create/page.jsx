@@ -9,102 +9,62 @@ import dynamic from "next/dynamic";
 const SimpleEditor = dynamic(() => import("@/package/App"), { ssr: false });
 
 export default function CreatePage() {
-  const [languages, setLanguages] = useState([]);
-  const [activeLang, setActiveLang] = useState("");
-  const [multiLangData, setMultiLangData] = useState({});
   const [menus, setMenus] = useState([]);
   const [form, setForm] = useState({
     menu_id: 0,
     submenu_id: 0,
     link: "",
     isactive: true,
+    page_title: "",
+    meta_title: "",
+    meta_keywords: "",
+    meta_description: "",
+    content: "",
   });
 
   useEffect(() => {
-    async function fetchInitialData() {
+    async function loadMenus() {
       try {
-        const langRes = await fetch("/api/languages");
-        const langs = await langRes.json();
-        setLanguages(langs);
-        setActiveLang(langs[0]?.name || "");
-
-        const initialData = {};
-        langs.forEach((lang) => {
-          initialData[lang.name] = {
-            meta_title: "",
-            page_title: "",
-            meta_keywords: "",
-            meta_description: "",
-            content: "",
-          };
-        });
-        setMultiLangData(initialData);
-
         const menuRes = await fetch("/api/menus");
         const menuData = await menuRes.json();
         setMenus(menuData.data || []);
       } catch (err) {
-        console.error("Veri alınırken hata oluştu:", err);
+        console.error("Error loading menus:", err);
       }
     }
 
-    fetchInitialData();
+    loadMenus();
   }, []);
 
-  const handleLangChange = (lang, field, value) => {
-    setMultiLangData((prev) => ({
-      ...prev,
-      [lang]: { ...prev[lang], [field]: value },
-    }));
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleFormChange = (key, value) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const isFormValid = () => {
+  const isValid = () => {
     return (
       form.link.trim() &&
-      languages.every((lang) => {
-        const entry = multiLangData[lang.name];
-        return (
-          entry.meta_title.trim() &&
-          entry.page_title.trim() &&
-          entry.meta_keywords.trim() &&
-          entry.meta_description.trim() &&
-          entry.content.trim()
-        );
-      })
+      form.page_title.trim() &&
+      form.meta_title.trim() &&
+      form.meta_keywords.trim() &&
+      form.meta_description.trim() &&
+      form.content.trim()
     );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!isFormValid()) {
+    if (!isValid()) {
       Swal.fire({
         icon: "warning",
-        title: "Eksik Bilgi",
-        text: "Tüm alanları doldurun.",
+        title: "Missing Fields",
+        text: "Please fill in all required fields.",
       });
       return;
     }
 
-    const titles = languages.map((lang) => ({
-      lang_code: lang.name,
-      ...multiLangData[lang.name],
-    }));
-
-    const payload = {
-      menu_id: form.menu_id || 0,
-      submenu_id: form.submenu_id || 0,
-      link: form.link,
-      isactive: form.isactive,
-      titles,
-    };
-
     Swal.fire({
-      title: "Yükleniyor...",
+      title: "Submitting...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
@@ -117,15 +77,15 @@ export default function CreatePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(form),
       });
 
-      if (!res.ok) throw new Error("Oluşturulamadı");
+      if (!res.ok) throw new Error();
 
       Swal.fire({
         icon: "success",
-        title: "Başarılı",
-        text: "Sayfa başarıyla oluşturuldu.",
+        title: "Success",
+        text: "Page successfully created.",
       }).then(() => {
         window.location.href = "/pages";
       });
@@ -133,91 +93,32 @@ export default function CreatePage() {
       console.error(err);
       Swal.fire({
         icon: "error",
-        title: "Hata",
-        text: "Yükleme sırasında hata oluştu.",
+        title: "Error",
+        text: "Failed to create page.",
       });
     }
   };
 
-  const current = multiLangData[activeLang] || {};
-
-  const selectedMenu = menus.find((m) => m.id === form.menu_id);
-  const submenus = selectedMenu?.submenus || [];
-
   return (
     <Layout>
       <div className={styles.container}>
-        <h2 className={styles.title}>Yeni Sayfa Oluştur</h2>
+        <h2 className={styles.title}>Create New Page</h2>
         <form onSubmit={handleSubmit} className={styles.form}>
-          <label htmlFor="link">Link</label>
+          <label htmlFor="link">Page URL</label>
           <input
             id="link"
             type="text"
             className={styles.input}
-            value={form.link || ""}
-            onChange={(e) => handleFormChange("link", e.target.value)}
+            value={form.link}
+            onChange={(e) => handleChange("link", e.target.value)}
           />
-
-          <label htmlFor="menu">Menü</label>
-          <select
-            id="menu"
-            className={styles.input}
-            value={form.menu_id}
-            onChange={(e) => {
-              const selectedId = Number(e.target.value);
-              handleFormChange("menu_id", selectedId);
-              handleFormChange("submenu_id", 0);
-            }}
-          >
-            <option value={0}>Seçiniz</option>
-            {menus.map((menu) => (
-              <option key={menu.id} value={menu.id}>
-                {menu.titles?.[activeLang] || `Menu ${menu.id}`}
-              </option>
-            ))}
-          </select>
-
-          {/* <label htmlFor="submenu">Alt Menü</label>
-          <select
-            id="submenu"
-            className={styles.input}
-            value={form.submenu_id}
-            onChange={(e) =>
-              handleFormChange("submenu_id", Number(e.target.value))
-            }
-          >
-            <option value={0}>Seçiniz</option>
-            {submenus.map((submenu) => (
-              <option key={submenu.id} value={submenu.id}>
-                {submenu.titles?.[activeLang] || `Submenu ${submenu.id}`}
-              </option>
-            ))}
-          </select> */}
-
-          <div className={styles.langTabs}>
-            {languages.map((lang) => (
-              <button
-                key={lang.name}
-                type="button"
-                className={`${styles.input} ${
-                  activeLang === lang.name ? styles.active : ""
-                }`}
-                onClick={() => setActiveLang(lang.name)}
-              >
-                {lang.name.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
           <label htmlFor="metaTitle">Meta Title</label>
           <input
             id="metaTitle"
             type="text"
             className={styles.input}
-            value={current.meta_title || ""}
-            onChange={(e) =>
-              handleLangChange(activeLang, "meta_title", e.target.value)
-            }
+            value={form.meta_title}
+            onChange={(e) => handleChange("meta_title", e.target.value)}
           />
 
           <label htmlFor="pageTitle">Page Title</label>
@@ -225,10 +126,8 @@ export default function CreatePage() {
             id="pageTitle"
             type="text"
             className={styles.input}
-            value={current.page_title || ""}
-            onChange={(e) =>
-              handleLangChange(activeLang, "page_title", e.target.value)
-            }
+            value={form.page_title}
+            onChange={(e) => handleChange("page_title", e.target.value)}
           />
 
           <label htmlFor="metaKeywords">Meta Keywords</label>
@@ -236,32 +135,27 @@ export default function CreatePage() {
             id="metaKeywords"
             type="text"
             className={styles.input}
-            value={current.meta_keywords || ""}
-            onChange={(e) =>
-              handleLangChange(activeLang, "meta_keywords", e.target.value)
-            }
+            value={form.meta_keywords}
+            onChange={(e) => handleChange("meta_keywords", e.target.value)}
           />
 
           <label htmlFor="metaDescription">Meta Description</label>
           <textarea
             id="metaDescription"
-            rows={2}
+            rows={3}
             className={styles.input}
-            value={current.meta_description || ""}
-            onChange={(e) =>
-              handleLangChange(activeLang, "meta_description", e.target.value)
-            }
+            value={form.meta_description}
+            onChange={(e) => handleChange("meta_description", e.target.value)}
           />
 
-          <label htmlFor="content">İçerik</label>
+          <label htmlFor="content">Content</label>
           <SimpleEditor
-            key={`${activeLang}`}
-            value={current.content}
-            onChange={(val) => handleLangChange(activeLang, "content", val)}
+            value={form.content}
+            onChange={(val) => handleChange("content", val)}
           />
 
           <button type="submit" className={styles.submitButton}>
-            OLUŞTUR
+            CREATE
           </button>
         </form>
       </div>

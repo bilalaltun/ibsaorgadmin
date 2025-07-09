@@ -7,7 +7,7 @@ export default function SliderPage() {
   return (
     <div>
       <Layout>
-        <h1>Menular</h1>
+        <h1>Menus</h1>
         <MenuTable />
       </Layout>
     </div>

@@ -10,32 +10,31 @@ import Cookies from "js-cookie";
 import styles from "./styles.module.css";
 
 export default function PageTable() {
-  const [menus, setMenus] = useState([]);
+  const [pages, setPages] = useState([]);
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  async function fetchMenus() {
+  const fetchPages = async () => {
     try {
       const res = await fetch("/api/pages");
-      if (!res.ok) throw new Error("Veri alınamadı.");
+      if (!res.ok) throw new Error("Failed to fetch pages.");
       const data = await res.json();
-      setMenus(data.data);
+      setPages(data.data || []);
     } catch {
-      Swal.fire("Hata", "Menüler yüklenemedi", "error");
+      Swal.fire("Error", "Failed to load pages", "error");
     }
-  }
+  };
 
   useEffect(() => {
-    fetchMenus();
+    fetchPages();
   }, []);
 
   const filtered = useMemo(() => {
-    return menus.filter((menu) => {
-      const titleObj = menu.titles?.find?.(t => t.lang_code === "tr") || menu.titles?.[0];
-      return (titleObj?.value || "").toLowerCase().includes(search.toLowerCase());
-    });
-  }, [search, menus]);
+    return pages.filter((page) =>
+      (page.page_title || "").toLowerCase().includes(search.toLowerCase())
+    );
+  }, [search, pages]);
 
   const paginated = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -46,11 +45,11 @@ export default function PageTable() {
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: "Silmek istediğinize emin misiniz?",
+      title: "Are you sure you want to delete this?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Evet, sil",
-      cancelButtonText: "İptal",
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
     });
 
     if (!result.isConfirmed) return;
@@ -64,24 +63,24 @@ export default function PageTable() {
         },
       });
       if (!res.ok) throw new Error();
-      setMenus((prev) => prev.filter((menu) => menu.id !== id));
-      Swal.fire("Silindi", "Menü silindi", "success");
+      setPages((prev) => prev.filter((page) => page.id !== id));
+      Swal.fire("Deleted", "Page successfully deleted", "success");
     } catch {
-      Swal.fire("Hata", "Silme başarısız", "error");
+      Swal.fire("Error", "Failed to delete page", "error");
     }
   };
 
-  const handleToggle = async (menu) => {
-    const updated = { ...menu, isactive: !menu.isactive };
+  const handleToggle = async (page) => {
+    const updated = { ...page, isactive: !page.isactive };
     Swal.fire({
-      title: "Güncelleniyor...",
+      title: "Updating...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
 
     try {
       const token = Cookies.get("token");
-      const res = await fetch(`/api/pages?id=${menu.id}`, {
+      const res = await fetch(`/api/pages?id=${page.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -91,10 +90,10 @@ export default function PageTable() {
       });
 
       if (!res.ok) throw new Error();
-      await fetchMenus();
-      Swal.fire("Başarılı", "Menü durumu güncellendi.", "success");
-    } catch (err) {
-      Swal.fire("Hata", "Güncelleme başarısız", "error");
+      await fetchPages();
+      Swal.fire("Success", "Status updated successfully", "success");
+    } catch {
+      Swal.fire("Error", "Update failed", "error");
     }
   };
 
@@ -102,7 +101,7 @@ export default function PageTable() {
     <div className={styles.tableWrapper}>
       <div className={styles.toolbar}>
         <div className={styles.leftControls}>
-          <label>Sayfada</label>
+          <label>Show</label>
           <select
             value={pageSize}
             onChange={(e) => {
@@ -114,22 +113,22 @@ export default function PageTable() {
               <option key={n}>{n}</option>
             ))}
           </select>
-          <label>kayıt göster</label>
+          <label>entries per page</label>
           <span className={styles.resultCount}>
-            Toplam: <b>{filtered.length}</b> kayıt
+            Total: <b>{filtered.length}</b> entries
           </span>
         </div>
 
         <div className={styles.rightControls}>
-          <label>Ara:</label>
+          <label>Search:</label>
           <input
             type="text"
-            placeholder="Menü başlığı ara..."
+            placeholder="Search page title..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <Link href="/pages/create">
-            <button className={styles.btnAdd}>YENİ EKLE</button>
+            <button className={styles.btnAdd}>ADD NEW</button>
           </Link>
         </div>
       </div>
@@ -138,44 +137,44 @@ export default function PageTable() {
         <thead>
           <tr>
             <th>#</th>
-            <th>Başlık</th>
+            <th>Page Title</th>
             <th>Link</th>
-            <th>Aktif</th>
-            <th>İşlem</th>
+            <th>Active</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {paginated.length === 0 ? (
             <tr>
               <td colSpan={5} className={styles.noData}>
-                Kayıt yok
+                No records found
               </td>
             </tr>
           ) : (
-            paginated.map((menu, i) => (
-              <tr key={menu.id}>
+            paginated.map((page, i) => (
+              <tr key={page.id}>
                 <td>{(currentPage - 1) * pageSize + i + 1}</td>
-                <td>{menu.titles?.find?.(t => t.lang_code === "tr")?.page_title || menu.titles?.[0]?.page_title || "-"}</td>
-                <td>{menu.link}</td>
+                <td>{page.page_title || "-"}</td>
+                <td>{page.link}</td>
                 <td>
                   <label className={styles.switch}>
                     <input
                       type="checkbox"
-                      checked={menu.isactive ?? true}
-                      onChange={() => handleToggle(menu)}
+                      checked={page.isactive ?? true}
+                      onChange={() => handleToggle(page)}
                     />
                     <span className={styles.slider}></span>
                   </label>
                 </td>
                 <td>
-                  <Link href={`/pages/content-edit/${menu.id}`}>
+                  <Link href={`/pages/content-edit/${page.id}`}>
                     <button className={styles.editBtn}>
                       <FaPen />
                     </button>
                   </Link>
                   <button
                     className={styles.deleteBtn}
-                    onClick={() => handleDelete(menu.id)}
+                    onClick={() => handleDelete(page.id)}
                   >
                     <FaTrash />
                   </button>

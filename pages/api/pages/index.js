@@ -259,7 +259,9 @@ const handler = async (req, res) => {
         totalCountQuery.where({ link });
       }
 
-      const totalCountResult = await totalCountQuery.count("id as count").first();
+      const totalCountResult = await totalCountQuery
+        .count("id as count")
+        .first();
       const totalCount = Number(totalCountResult?.count || 0);
 
       return res.status(200).json({
@@ -275,7 +277,9 @@ const handler = async (req, res) => {
       });
     } catch (err) {
       console.error("[GET /pages]", err);
-      return res.status(500).json({ error: "GET failed", details: err.message });
+      return res
+        .status(500)
+        .json({ error: "GET failed", details: err.message });
     }
   }
 
@@ -293,7 +297,7 @@ const handler = async (req, res) => {
       content,
     } = req.body;
 
-    if (!link || (!menu_id && !submenu_id) || !page_title || !meta_title) {
+    if (!link  || !page_title || !meta_title) {
       return res.status(400).json({
         error: "Eksik veya geçersiz alanlar (menu_id veya submenu_id zorunlu)",
       });
@@ -335,24 +339,26 @@ const handler = async (req, res) => {
       content,
     } = req.body;
 
-    if (!link || (!menu_id && !submenu_id) || !page_title || !meta_title) {
+    if (!link || !page_title || !meta_title) {
       return res.status(400).json({
         error: "Eksik veya geçersiz alanlar (menu_id veya submenu_id zorunlu)",
       });
     }
 
     try {
-      const updatedCount = await db("Pages").where({ id }).update({
-        menu_id: menu_id || null,
-        submenu_id: submenu_id || null,
-        link,
-        isactive,
-        meta_title,
-        page_title,
-        meta_keywords,
-        meta_description,
-        content,
-      });
+      const updatedCount = await db("Pages")
+        .where({ id })
+        .update({
+          menu_id: menu_id || null,
+          submenu_id: submenu_id || null,
+          link,
+          isactive,
+          meta_title,
+          page_title,
+          meta_keywords,
+          meta_description,
+          content,
+        });
 
       if (updatedCount === 0) {
         return res.status(404).json({ error: "Sayfa bulunamadı" });

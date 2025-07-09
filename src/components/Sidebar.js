@@ -108,6 +108,9 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/menus")}>
             <FaListAlt /> <span>Menus</span>
           </li>
+          <li onClick={() => handleNavigate("/pages")}>
+            <FaImages /> <span>Pages</span>
+          </li>
         </ul>
 
         {/* <ul className="sidebar-section">
@@ -120,7 +123,6 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/settings")}>
             <FaWrench /> <span>Site Settings</span>
           </li>
-        
           <li onClick={() => handleNavigate("/cerezler")}>
             <FaCookieBite /> <span>Cookies</span>
           </li>

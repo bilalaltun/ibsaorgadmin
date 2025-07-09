@@ -6,7 +6,7 @@ export default function SliderPage() {
   return (
     <div>
       <Layout>
-        <h1>Sayfa Yönetimi</h1>
+        <h1>Page Management</h1>
         <PageTable />
       </Layout>
     </div>
