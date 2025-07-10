@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import "./globals.css";
 import { Geist, Geist_Mono } from "next/font/google";
 
@@ -19,13 +19,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <title> AIF CMS | Content Management Software</title>
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {/* <AuthProvider>
           <AuthGuard>
             {children}
             </AuthGuard>
         </AuthProvider> */}
-            {children}
+        {children}
       </body>
     </html>
   );

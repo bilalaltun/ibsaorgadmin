@@ -100,7 +100,7 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/countdowns")}>
             <FaClock /> <span>Countdowns</span>
           </li>
-          <li onClick={() => handleNavigate("/countdowns")}>
+          <li onClick={() => handleNavigate("/notifications")}>
             <FaSms /> <span>Notifications</span>
           </li>
           <li onClick={() => handleNavigate("/contact-details")}>
