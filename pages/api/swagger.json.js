@@ -70,7 +70,8 @@ const options = {
     path.resolve('./pages/api/downloadfile/index.js'),
     path.resolve('./pages/api/downloadfile/category/index.js'),
     path.resolve('./pages/api/downloadfile/file/index.js'),
-    path.resolve('./pages/api/team/index.js')
+    path.resolve('./pages/api/team/index.js'),
+    path.resolve('./pages/api/banner/index.js')
 
 
 

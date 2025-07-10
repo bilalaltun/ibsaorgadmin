@@ -218,7 +218,6 @@ import { verifyToken } from "../../../lib/authMiddleware";
 const handler = async (req, res) => {
   const id = req.query.id ? parseInt(req.query.id) : null;
 
-  // Token 
   if (["POST", "PUT", "DELETE"].includes(req.method)) {
     try {
       verifyToken(req);
@@ -227,7 +226,7 @@ const handler = async (req, res) => {
     }
   }
 
-  // GET /sitesettings
+  // GET
   if (req.method === "GET") {
     try {
       const pageSize = parseInt(req.query.pageSize) || 10;
@@ -249,35 +248,17 @@ const handler = async (req, res) => {
         return res.status(404).json({ error: "Site ayarları bulunamadı" });
       }
 
-      const results = await Promise.all(
-        settingsList.map(async (site) => {
-          const [general, contact, theme] = await Promise.all([
-            db("GeneralSettings").where({ site_id: site.id }).first(),
-            db("ContactSettings").where({ site_id: site.id }).first(),
-            db("ThemeSettings").where({ site_id: site.id }).first(),
-          ]);
-
-          return {
-            id: site.id,
-            date: site.date,
-            general,
-            contact,
-            theme,
-          };
-        })
-      );
-
       const totalCountResult = await db("SiteSettings").count("id as count").first();
       const totalCount = Number(totalCountResult?.count || 0);
 
       res.status(200).json({
-        data: id ? results[0] : results,
+        data: id ? settingsList[0] : settingsList,
         pagination: !id
           ? {
               totalPagesCount: Math.ceil(totalCount / pageSize),
               currentPage,
               pageSize,
-              currentPageCount: results.length,
+              currentPageCount: settingsList.length,
             }
           : undefined,
       });
@@ -287,22 +268,30 @@ const handler = async (req, res) => {
     }
   }
 
-  // POST /sitesettings
+  // POST
   else if (req.method === "POST") {
-    const { date, general, contact, theme } = req.body;
+    const {
+      date,
+      general = {},
+      contact = {},
+      theme = {}
+    } = req.body;
 
     try {
-      await db.transaction(async (trx) => {
-        const inserted = await trx("SiteSettings").insert({ date }).returning("id");
-        const siteId = inserted?.[0]?.id || inserted?.[0];
-
-        if (!siteId || typeof siteId !== "number") {
-          throw new Error("Site ID alınamadı.");
-        }
-
-        await trx("GeneralSettings").insert({ site_id: siteId, ...general });
-        await trx("ContactSettings").insert({ site_id: siteId, ...contact });
-        await trx("ThemeSettings").insert({ site_id: siteId, ...theme });
+      await db("SiteSettings").insert({
+        date,
+        site_address: general.site_address,
+        site_code: general.site_code,
+        google_analytics: general.google_analytics,
+        whatsapp_number: general.whatsapp_number,
+        phone: contact.phone,
+        email: contact.email,
+        logo_img: theme.logo_img,
+        instagram: theme.instagram,
+        facebook: theme.facebook,
+        twitter: theme.twitter,
+        youtube: theme.youtube,
+        linkedin: theme.linkedin
       });
 
       res.status(201).json({ success: true });
@@ -312,19 +301,37 @@ const handler = async (req, res) => {
     }
   }
 
-  // PUT /sitesettings?id={id}
+  // PUT
   else if (req.method === "PUT") {
     if (!id) return res.status(400).json({ error: "ID gerekli" });
 
-    const { date, general, contact, theme } = req.body;
+    const {
+      date,
+      general = {},
+      contact = {},
+      theme = {}
+    } = req.body;
 
     try {
-      await db.transaction(async (trx) => {
-        await trx("SiteSettings").where({ id }).update({ date });
-        await trx("GeneralSettings").where({ site_id: id }).update(general);
-        await trx("ContactSettings").where({ site_id: id }).update(contact);
-        await trx("ThemeSettings").where({ site_id: id }).update(theme);
+      const updated = await db("SiteSettings").where({ id }).update({
+        date,
+        site_address: general.site_address,
+        site_code: general.site_code,
+        google_analytics: general.google_analytics,
+        whatsapp_number: general.whatsapp_number,
+        phone: contact.phone,
+        email: contact.email,
+        logo_img: theme.logo_img,
+        instagram: theme.instagram,
+        facebook: theme.facebook,
+        twitter: theme.twitter,
+        youtube: theme.youtube,
+        linkedin: theme.linkedin
       });
+
+      if (updated === 0) {
+        return res.status(404).json({ error: "Kayıt bulunamadı" });
+      }
 
       res.status(200).json({ success: true });
     } catch (err) {
@@ -333,21 +340,16 @@ const handler = async (req, res) => {
     }
   }
 
-  // DELETE /sitesettings?id={id}
+  // DELETE
   else if (req.method === "DELETE") {
     if (!id) return res.status(400).json({ error: "ID gerekli" });
 
     try {
-      await db.transaction(async (trx) => {
-        await trx("ThemeSettings").where({ site_id: id }).del();
-        await trx("ContactSettings").where({ site_id: id }).del();
-        await trx("GeneralSettings").where({ site_id: id }).del();
-        const deleted = await trx("SiteSettings").where({ id }).del();
+      const deleted = await db("SiteSettings").where({ id }).del();
 
-        if (deleted === 0) {
-          throw new Error("Kayıt bulunamadı veya silinemedi.");
-        }
-      });
+      if (deleted === 0) {
+        return res.status(404).json({ error: "Kayıt bulunamadı veya silinemedi" });
+      }
 
       res.status(200).json({ success: true });
     } catch (err) {
@@ -356,7 +358,7 @@ const handler = async (req, res) => {
     }
   }
 
-  // Unsupported Method
+  // Unsupported
   else {
     res.status(405).json({ error: "Method not allowed" });
   }

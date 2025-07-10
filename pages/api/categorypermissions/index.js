@@ -186,36 +186,45 @@ const handler = async (req, res) => {
   }
 
   // POST: Yeni yetki ata
-  else if (req.method === "POST") {
-    const {
+// POST: Çoklu yetki ata
+else if (req.method === "POST") {
+  const {
+    user_id,
+    category_ids,
+    can_create = false,
+    can_read = false,
+    can_update = false,
+    can_delete = false,
+  } = req.body;
+
+  // ✅ Kontrol düzeltildi
+  if (
+    !user_id ||
+    !Array.isArray(category_ids) ||
+    category_ids.length === 0 ||
+    category_ids.some((id) => typeof id !== "number")
+  ) {
+    return res.status(400).json({ error: "user_id ve geçerli category_ids dizisi zorunludur" });
+  }
+
+  try {
+    const inserts = category_ids.map((category_id) => ({
       user_id,
       category_id,
-      can_create = false,
-      can_read = false,
-      can_update = false,
-      can_delete = false,
-    } = req.body;
+      can_create,
+      can_read,
+      can_update,
+      can_delete,
+    }));
 
-    if (!user_id || !category_id) {
-      return res.status(400).json({ error: "user_id ve category_id zorunludur" });
-    }
-
-    try {
-      await db("Permissions").insert({
-        user_id,
-        category_id,
-        can_create,
-        can_read,
-        can_update,
-        can_delete,
-      });
-
-      res.status(201).json({ success: true });
-    } catch (err) {
-      console.error("[POST /categorypermissions]", err);
-      res.status(500).json({ error: "POST failed", details: err.message });
-    }
+    await db("Permissions").insert(inserts);
+    res.status(201).json({ success: true });
+  } catch (err) {
+    console.error("[POST /categorypermissions]", err);
+    res.status(500).json({ error: "POST failed", details: err.message });
   }
+}
+
 
 
   //PUT
