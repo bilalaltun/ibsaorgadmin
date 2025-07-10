@@ -124,42 +124,69 @@ const handler = async (req, res) => {
   }
 
   // GET
-  if (req.method === "GET") {
-    try {
-      const pages = await db("Pagess").where({ isactive: true });
+ if (req.method === "GET") {
+  try {
+    const { name } = req.query;
 
-      const result = await Promise.all(
-        pages.map(async (page) => {
-          const categories = await db("PageCategories").where({ page_id: page.id });
-          const CategoryTab = await Promise.all(
-            categories.map(async (cat) => {
-              const files = await db("PageFiles").where({ category_id: cat.id });
-              return {
-                Title: cat.title,
-                Files: files.map((f) => ({
-                  title: f.title,
-                  fileurl: f.fileurl,
-                })),
-              };
-            })
-          );
-          return {
-            name: page.name,
-            CategoryTab,
-          };
-        })
-      );
+    let pagesQuery = db("Pagess").where({ isactive: true });
 
-      res.status(200).json({ Pages: result });
-    } catch (err) {
-      console.error("[GET /downloadfile]", err);
-      res.status(500).json({ error: "GET failed", details: err.message });
+    if (name && typeof name === "string") {
+      pagesQuery = pagesQuery.andWhere("name", name);
     }
+
+    const pages = await pagesQuery;
+
+    const result = await Promise.all(
+      pages.map(async (page) => {
+        const categories = await db("PageCategories").where({ page_id: page.id });
+        const CategoryTab = await Promise.all(
+          categories.map(async (cat) => {
+            const files = await db("PageFiles").where({ category_id: cat.id });
+            return {
+              Title: cat.title,
+              Files: files.map((f) => ({
+                title: f.title,
+                fileurl: f.fileurl,
+              })),
+            };
+          })
+        );
+        return {
+          name: page.name,
+          CategoryTab,
+        };
+      })
+    );
+
+    res.status(200).json({ Pages: result });
+  } catch (err) {
+    console.error("[GET /downloadfile]", err);
+    res.status(500).json({ error: "GET failed", details: err.message });
   }
+}
+
 
   // POST
+  // POST (tekil ya da array)
   else if (req.method === "POST") {
-    const { name, isactive = true } = req.body;
+    const input = req.body;
+
+    // Eğer dizi olarak geldiyse
+    if (Array.isArray(input)) {
+      try {
+        const validItems = input.filter(p => p.name && typeof p.name === "string");
+        if (!validItems.length) return res.status(400).json({ error: "Geçerli sayfa verisi yok" });
+
+        await db("Pagess").insert(validItems);
+        return res.status(201).json({ success: true, count: validItems.length });
+      } catch (err) {
+        console.error("[POST /downloadfile - array]", err);
+        return res.status(500).json({ error: "POST failed", details: err.message });
+      }
+    }
+
+    // Tekil obje geldiyse
+    const { name, isactive = true } = input;
 
     if (!name || typeof name !== "string") {
       return res.status(400).json({ error: "name alanı zorunludur ve string olmalıdır" });
@@ -167,12 +194,13 @@ const handler = async (req, res) => {
 
     try {
       await db("Pagess").insert({ name, isactive });
-      res.status(201).json({ success: true });
+      return res.status(201).json({ success: true });
     } catch (err) {
-      console.error("[POST /downloadfile]", err);
-      res.status(500).json({ error: "POST failed", details: err.message });
+      console.error("[POST /downloadfile - single]", err);
+      return res.status(500).json({ error: "POST failed", details: err.message });
     }
   }
+
 
   // PUT
   else if (req.method === "PUT") {
