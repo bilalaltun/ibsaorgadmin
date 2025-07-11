@@ -122,7 +122,7 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/members")}>
             <FaDownload /> <span>Commitee & Referees</span>
           </li>
-          <li onClick={() => handleNavigate("/members")}>
+          <li onClick={() => handleNavigate("/banner")}>
             <FaDownload /> <span>Banner Image</span>
           </li>
           <li onClick={() => handleNavigate("/settings")}>

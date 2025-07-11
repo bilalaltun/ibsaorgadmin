@@ -7,6 +7,7 @@ import UploadField from "@/components/UploadField/UploadField";
 import Swal from "sweetalert2";
 import styles from "./SettingsTabs.module.css";
 import Cookies from "js-cookie";
+
 const tabs = [
   { key: "general", label: "GENEL" },
   { key: "contact", label: "İLETİŞİM BİLGİLERİ" },
@@ -34,6 +35,8 @@ export default function SettingsTabsPage() {
       instagram: "",
       twitter: "",
     },
+    id: null,
+    date: "",
   });
 
   const fetchSettings = async () => {
@@ -43,11 +46,26 @@ export default function SettingsTabsPage() {
       const settings = Array.isArray(json.data) ? json.data[0] : json.data;
 
       setForm({
-        id: settings.id || "",
+        id: settings.id || null,
         date: settings.date || "",
-        general: settings.general || {},
-        contact: settings.contact || {},
-        theme: settings.theme || {},
+        general: {
+          site_address: settings.site_address || "",
+          site_code: settings.site_code || "",
+          google_analytics: settings.google_analytics || "",
+          whatsapp_number: settings.whatsapp_number || "",
+        },
+        contact: {
+          phone: settings.phone || "",
+          email: settings.email || "",
+        },
+        theme: {
+          logo_img: settings.logo_img || "",
+          facebook: settings.facebook || "",
+          youtube: settings.youtube || "",
+          linkedin: settings.linkedin || "",
+          instagram: settings.instagram || "",
+          twitter: settings.twitter || "",
+        },
       });
     } catch {
       Swal.fire("Hata", "Veriler alınamadı", "error");
@@ -70,26 +88,25 @@ export default function SettingsTabsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    Swal.fire({ title: "Güncelleniyor...", didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: "Kaydediliyor...", didOpen: () => Swal.showLoading() });
 
     try {
       const token = Cookies.get("token");
 
-      const cleanObject = (obj) => {
-        const { id, site_id, ...rest } = obj;
-        return rest;
-      };
-
       const payload = {
-        general: cleanObject(form.general),
-        contact: cleanObject(form.contact),
-        theme: cleanObject(form.theme),
+        general: form.general,
+        contact: form.contact,
+        theme: form.theme,
         date: form.date || new Date().toISOString(),
       };
 
-      const res = await fetch(`/api/sitesettings?id=${form.id}`, {
-        method: "PUT",
+      const method = form.id ? "PUT" : "POST";
+      const endpoint = form.id
+        ? `/api/sitesettings?id=${form.id}`
+        : `/api/sitesettings`;
+
+      const res = await fetch(endpoint, {
+        method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -99,10 +116,10 @@ export default function SettingsTabsPage() {
 
       if (!res.ok) throw new Error();
 
-      Swal.fire("Başarılı", "Tüm ayarlar güncellendi", "success");
+      Swal.fire("Başarılı", "Ayarlar kaydedildi", "success");
       fetchSettings();
     } catch {
-      Swal.fire("Hata", "Güncelleme başarısız", "error");
+      Swal.fire("Hata", "Ayarlar kaydedilemedi", "error");
     }
   };
 
@@ -152,6 +169,14 @@ export default function SettingsTabsPage() {
                 value={form.general.google_analytics}
                 onChange={(e) =>
                   handleChange("general", "google_analytics", e.target.value)
+                }
+              />
+
+              <label>Whatsapp Numarası</label>
+              <input
+                value={form.general.whatsapp_number}
+                onChange={(e) =>
+                  handleChange("general", "whatsapp_number", e.target.value)
                 }
               />
             </>
@@ -231,7 +256,7 @@ export default function SettingsTabsPage() {
           )}
 
           <button type="submit" className={styles.saveButton}>
-            TÜM AYARLARI GÜNCELLE
+            TÜM AYARLARI KAYDET
           </button>
         </form>
       </div>
