@@ -6,8 +6,6 @@ import Layout from "@/components/Layout";
 
 export default function SliderPage() {
   const [sliders, setSliders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     async function fetchSliders() {
@@ -18,29 +16,17 @@ export default function SliderPage() {
         setSliders(data);
       } catch (err) {
         console.error(err);
-        setError("Slider verileri alınamadı.");
-      } finally {
-        setLoading(false);
       }
     }
 
     fetchSliders();
   }, []);
 
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
-
   return (
     <div>
       <Layout>
-        <h1>Slider Yönetimi</h1>
-        {loading ? (
-          <div className={"loadingSpinner"}>
-            <div className={"spinner"} />
-            <p>İçerikler yükleniyor...</p>
-          </div>
-        ) : (
-          <SliderTable sliders={sliders} />
-        )}
+        <h1>Slider Management</h1>
+        <SliderTable sliders={sliders} />
       </Layout>
     </div>
   );

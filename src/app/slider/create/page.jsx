@@ -1,92 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
-import styles from "./CreateSliderPage.module.css";
 import UploadField from "@/components/UploadField/UploadField";
 import Swal from "sweetalert2";
 import Cookies from "js-cookie";
+import styles from "./CreateSliderPage.module.css";
 
 export default function CreateSliderPage() {
   const [form, setForm] = useState({
     image_url: "",
-    video_url: "",
-    order: 9999,
-    isActive: true,
-    dynamic_link_title: "",
+    titles: "",
+    content: "", // this is used for the date (string)
     dynamic_link: "",
-    dynamic_link_alternative: "",
+    order: 1,
+    isactive: true,
   });
 
-  const [languages, setLanguages] = useState([]);
-  const [activeLang, setActiveLang] = useState("");
-  const [multiLangData, setMultiLangData] = useState({});
-
-  // Dilleri çek
-  useEffect(() => {
-    async function fetchLanguages() {
-      try {
-        const res = await fetch("/api/languages");
-        if (!res.ok) throw new Error("Diller alınamadı.");
-        const data = await res.json();
-
-        const langs = data.map((l) => l.name);
-        setLanguages(langs);
-        setActiveLang(langs[0]);
-
-        const initialData = langs.reduce((acc, lang) => {
-          acc[lang] = { title: "", description: "", content: "" };
-          return acc;
-        }, {});
-        setMultiLangData(initialData);
-      } catch (err) {
-        console.error("Dil verisi alınamadı:", err);
-      }
-    }
-
-    fetchLanguages();
-  }, []);
-
-  // Slider order
   useEffect(() => {
     async function fetchSliderCount() {
       try {
         const res = await fetch("/api/sliders");
-        if (!res.ok) throw new Error("Slider listesi alınamadı");
+        if (!res.ok) throw new Error("Failed to fetch slider list.");
         const data = await res.json();
-        data?.data?.length > 0
-          ? setForm((prev) => ({ ...prev, order: data.data.length + 1 }))
-          : setForm((prev) => ({ ...prev, order: 1 }));
+        const count = data?.data?.length || 0;
+        setForm((prev) => ({ ...prev, order: count + 1 }));
       } catch (err) {
-        console.error("Slider sırası belirlenemedi:", err);
+        console.error("Failed to calculate order:", err);
       }
     }
 
     fetchSliderCount();
   }, []);
 
-  const handleFormChange = (key, value) => {
+  const handleChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleLangChange = (lang, field, value) => {
-    setMultiLangData((prev) => ({
-      ...prev,
-      [lang]: { ...prev[lang], [field]: value },
-    }));
-  };
-
-  const isFormValid = () => {
-    return (
-      (form.image_url || form.video_url) &&
-      languages.every(
-        (lang) =>
-          multiLangData[lang]?.title.trim() &&
-          multiLangData[lang]?.description.trim() &&
-          multiLangData[lang]?.content.trim()
-      )
-    );
-  };
+  const isFormValid = () =>
+    form.image_url &&
+    form.titles.trim() &&
+    form.content.trim() &&
+    form.dynamic_link.trim();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,39 +49,27 @@ export default function CreateSliderPage() {
     if (!isFormValid()) {
       Swal.fire({
         icon: "warning",
-        title: "Eksik Bilgi",
-        text: "Görsel ve tüm dil içerikleri zorunludur.",
+        title: "Missing Fields",
+        text: "Image, title, date, and link are required.",
       });
       return;
     }
 
-    // API formatına uygun hale getir
-    const titles = [];
-    const description = [];
-    const content = [];
-
-    languages.forEach((langCode) => {
-      const entry = multiLangData[langCode];
-      titles.push({ value: entry.title, langCode });
-      description.push({ value: entry.description, langCode });
-      content.push({ value: entry.content, langCode });
-    });
-
     const payload = {
       image_url: form.image_url,
-      video_url: form.video_url,
-      dynamic_link_title: form.dynamic_link_title || "test",
-      dynamic_link: form.dynamic_link || "test",
-      dynamic_link_alternative: form.dynamic_link_alternative || "test",
+      video_url: "",
+      dynamic_link_title: "default",
+      dynamic_link: form.dynamic_link,
+      dynamic_link_alternative: "",
       order: form.order,
-      isactive: form.isActive,
-      titles,
-      description,
-      content,
+      isactive: form.isactive,
+      titles: form.titles,
+      description: "",
+      content: form.content,
     };
 
     Swal.fire({
-      title: "Yükleniyor...",
+      title: "Submitting...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
@@ -142,12 +85,12 @@ export default function CreateSliderPage() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Slider yüklenemedi.");
+      if (!res.ok) throw new Error("Failed to submit slider.");
 
       Swal.fire({
         icon: "success",
-        title: "Başarılı",
-        text: "Slider başarıyla oluşturuldu.",
+        title: "Success",
+        text: "Slider created successfully.",
       }).then(() => {
         window.location.href = "/slider";
       });
@@ -155,95 +98,53 @@ export default function CreateSliderPage() {
       console.error(err);
       Swal.fire({
         icon: "error",
-        title: "Hata",
-        text: "Yükleme sırasında bir sorun oluştu.",
+        title: "Error",
+        text: "An error occurred during submission.",
       });
     }
   };
 
-  const current = multiLangData[activeLang] || {};
-
   return (
     <Layout>
       <div className={styles.container}>
-        <h2 className={styles.title}>Yeni Slider Ekle</h2>
+        <h2 className={styles.title}>Create New Slider</h2>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          <section className={styles.section}>
-            <div className={styles.uploadWrapper}>
-              <UploadField
-                label="Görsel Ekle"
-                type="image"
-                accept="image/*"
-                disabled={!!form.video_url}
-                value={form.image_url}
-                onChange={(url) => handleFormChange("image_url", url)}
-              />
-              <UploadField
-                label="Video Ekle"
-                type="video"
-                accept="video/mp4"
-                disabled={!!form.image_url}
-                value={form.video_url}
-                onChange={(url) => handleFormChange("video_url", url)}
-              />
-            </div>
-          </section>
+          <label>Image</label>
+          <UploadField
+            type="image"
+            accept="image/*"
+            value={form.image_url}
+            onChange={(url) => handleChange("image_url", url)}
+            label="Upload Image"
+          />
 
-          {languages.length > 0 && (
-            <section className={styles.section}>
-              <div className={styles.langTabs}>
-                {languages.map((lang) => (
-                  <button
-                    key={lang}
-                    type="button"
-                    className={activeLang === lang ? styles.active : ""}
-                    onClick={() => setActiveLang(lang)}
-                  >
-                    {lang.toUpperCase()}
-                  </button>
-                ))}
-              </div>
+          <label>Title</label>
+          <input
+            type="text"
+            className={styles.input}
+            value={form.titles}
+            onChange={(e) => handleChange("titles", e.target.value)}
+          />
 
-              <h2>{activeLang.toUpperCase()} İçeriği</h2>
+          <label>Date</label>
+          <input
+            type="date"
+            className={styles.input}
+            value={form.content}
+            onChange={(e) => handleChange("content", e.target.value)}
+          />
 
-              <label>Başlık</label>
-              <input
-                type="text"
-                value={current.title}
-                onChange={(e) =>
-                  handleLangChange(activeLang, "title", e.target.value)
-                }
-              />
+          <label>Link</label>
+          <input
+            type="text"
+            className={styles.input}
+            value={form.dynamic_link}
+            onChange={(e) => handleChange("dynamic_link", e.target.value)}
+          />
 
-              <label>Açıklama</label>
-              <textarea
-                rows={2}
-                className={styles.input}
-                value={current.description}
-                onChange={(e) =>
-                  handleLangChange(activeLang, "description", e.target.value)
-                }
-              />
-
-              <label>İçerik</label>
-              <textarea
-                rows={3}
-                className={styles.input}
-                value={current.content}
-                onChange={(e) =>
-                  handleLangChange(activeLang, "content", e.target.value)
-                }
-              />
-            </section>
-          )}
-
-          <button
-            type="submit"
-            className={styles.submitButton}
-            // disabled={!isFormValid()}
-          >
-            EKLE
+          <button type="submit" className={styles.submitButton}>
+            CREATE SLIDER
           </button>
         </form>
       </div>

@@ -128,12 +128,13 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/settings")}>
             <FaWrench /> <span>Site Settings</span>
           </li>
-        </ul>
-
-        {/* <ul className="sidebar-section">
           <li onClick={() => handleNavigate("/slider")}>
             <FaImages /> <span>Slider</span>
           </li>
+        </ul>
+
+        {/* <ul className="sidebar-section">
+          
           <li onClick={() => handleNavigate("/form-data")}>
             <FaWpforms /> <span>Form Submissions</span>
           </li>

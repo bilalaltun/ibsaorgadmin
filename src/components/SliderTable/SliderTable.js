@@ -6,8 +6,6 @@ import Link from "next/link";
 import Swal from "sweetalert2";
 import { FaPen, FaTrash, FaSortUp, FaSortDown } from "react-icons/fa";
 import styles from "./SliderTable.module.css";
-import langs from "@/data/langs";
-import Image from "next/image";
 import Cookies from "js-cookie";
 
 export default function SliderTable() {
@@ -23,26 +21,20 @@ export default function SliderTable() {
     async function fetchSliders() {
       try {
         const res = await fetch("/api/sliders");
-        if (!res.ok) throw new Error("Veri alınamadı");
+        if (!res.ok) throw new Error("Failed to fetch");
         const data = await res.json();
         setSliders(data.data);
       } catch {
-        setError("Slider verileri alınamadı.");
+        setError("Failed to load sliders.");
       }
     }
     fetchSliders();
   }, []);
 
-  const convertToArrayFormat = (obj) =>
-    Object.entries(obj || {}).map(([langCode, value]) => ({
-      langCode,
-      value,
-    }));
-
   const filtered = useMemo(() => {
     return sliders?.length > 0
       ? sliders.filter((s) => {
-          const title = s.titles?.[langs[0]] || "";
+          const title = s.titles || "";
           return title.toLowerCase().includes(search.toLowerCase());
         })
       : [];
@@ -50,8 +42,8 @@ export default function SliderTable() {
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
-      const valA = a.titles?.[langs[0]]?.toLowerCase?.() || "";
-      const valB = b.titles?.[langs[0]]?.toLowerCase?.() || "";
+      const valA = a.titles?.toLowerCase?.() || "";
+      const valB = b.titles?.toLowerCase?.() || "";
       if (valA < valB) return sortAsc ? -1 : 1;
       if (valA > valB) return sortAsc ? 1 : -1;
       return 0;
@@ -75,15 +67,16 @@ export default function SliderTable() {
 
   const handleDelete = async (id) => {
     const result = await Swal.fire({
-      title: "Bu slider silinsin mi?",
-      text: "Bu işlem geri alınamaz!",
+      title: "Delete this slider?",
+      text: "This action cannot be undone!",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Evet, sil",
-      cancelButtonText: "İptal",
+      confirmButtonText: "Yes, delete",
+      cancelButtonText: "Cancel",
     });
 
     if (!result.isConfirmed) return;
+
     try {
       const token = Cookies.get("token");
       const res = await fetch(`/api/sliders?id=${id}`, {
@@ -92,11 +85,56 @@ export default function SliderTable() {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (!res.ok) throw new Error("Silme başarısız");
+      if (!res.ok) throw new Error("Delete failed");
       setSliders((prev) => prev.filter((s) => s.id !== id));
-      Swal.fire("Silindi!", "Slider başarıyla silindi.", "success");
+      Swal.fire("Deleted", "Slider deleted successfully.", "success");
     } catch {
-      Swal.fire("Hata", "Silme işlemi sırasında sorun oluştu.", "error");
+      Swal.fire("Error", "An error occurred while deleting.", "error");
+    }
+  };
+
+  const handleToggleActive = async (slider) => {
+    const updated = { ...slider, isactive: !slider.isactive };
+
+    Swal.fire({
+      title: "Updating status...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const token = Cookies.get("token");
+      const res = await fetch(`/api/sliders?id=${slider.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          image_url: updated.image_url,
+          video_url: updated.video_url,
+          dynamic_link_title: updated.dynamic_link_title,
+          dynamic_link: updated.dynamic_link,
+          dynamic_link_alternative: updated.dynamic_link_alternative,
+          order: updated.order,
+          isactive: updated.isactive,
+          titles: updated.titles,
+          description: updated.description,
+          content: updated.content,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Update failed");
+
+      setSliders((prev) =>
+        prev.map((s) =>
+          s.id === slider.id ? { ...s, isactive: updated.isactive } : s
+        )
+      );
+      Swal.close();
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Status update failed", "error");
     }
   };
 
@@ -106,7 +144,7 @@ export default function SliderTable() {
     <div className={styles.tableWrapper}>
       <div className={styles.toolbar}>
         <div className={styles.leftControls}>
-          <label>Sayfada</label>
+          <label>Show</label>
           <select
             value={pageSize}
             onChange={(e) => {
@@ -118,26 +156,25 @@ export default function SliderTable() {
               <option key={n}>{n}</option>
             ))}
           </select>
-          <label>kayıt göster</label>
+          <label>records per page</label>
           <span className={styles.resultCount}>
-            Bulunan: <b>{filtered.length}</b> kayıt
+            Total: <b>{filtered.length}</b>
           </span>
         </div>
 
         <div className={styles.rightControls}>
-          <label>Ara:</label>
+          <label>Search:</label>
           <input
             type="text"
-            placeholder="Başlık ara..."
+            placeholder="Search by title..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <Link href="/slider/sort">
-            <button className={styles.btnAdd}>SIRALA</button>
+            <button className={styles.btnAdd}>SORT</button>
           </Link>
-
           <Link href="/slider/create">
-            <button className={styles.btnAdd}>YENİ EKLE</button>
+            <button className={styles.btnAdd}>ADD NEW</button>
           </Link>
         </div>
       </div>
@@ -147,7 +184,7 @@ export default function SliderTable() {
           <tr>
             <th>#</th>
             <th onClick={() => handleSort("titles")}>
-              Başlık{" "}
+              Title{" "}
               {sortField === "titles" ? (
                 sortAsc ? (
                   <FaSortUp />
@@ -156,23 +193,23 @@ export default function SliderTable() {
                 )
               ) : null}
             </th>
-            <th>Fotograf</th>
-            <th>Durum</th>
-            <th>İşlem</th>
+            <th>Image</th>
+            <th>Status</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {paginated.length === 0 ? (
             <tr>
               <td colSpan={5} className={styles.noData}>
-                Kayıt bulunamadı.
+                No records found.
               </td>
             </tr>
           ) : (
             paginated.map((slider, i) => (
               <tr key={slider.id}>
                 <td>{(currentPage - 1) * pageSize + i + 1}</td>
-                <td>{slider.titles?.[langs[0]] || "-"}</td>
+                <td>{slider.titles || "-"}</td>
                 <td>
                   {slider.image_url && (
                     <img src={slider.image_url} className="image" />
@@ -183,66 +220,11 @@ export default function SliderTable() {
                     <input
                       type="checkbox"
                       checked={slider.isactive}
-                      onChange={async () => {
-                        const updated = {
-                          ...slider,
-                          isactive: !slider.isactive,
-                        };
-
-                        Swal.fire({
-                          title: "Durum güncelleniyor...",
-                          allowOutsideClick: false,
-                          didOpen: () => Swal.showLoading(),
-                        });
-
-                        try {
-                          const token = Cookies.get("token");
-                          const res = await fetch(
-                            `/api/sliders?id=${slider.id}`,
-                            {
-                              method: "PUT",
-                              headers: {
-                                "Content-Type": "application/json",
-                                Authorization: `Bearer ${token}`,
-                              },
-                              body: JSON.stringify({
-                                image_url: updated.image_url,
-                                video_url: updated.video_url,
-                                dynamic_link_title: updated.dynamic_link_title,
-                                dynamic_link: updated.dynamic_link,
-                                dynamic_link_alternative:
-                                  updated.dynamic_link_alternative,
-                                order: updated.order,
-                                isactive: updated.isactive,
-                                titles: convertToArrayFormat(updated.titles),
-                                description: convertToArrayFormat(
-                                  updated.descriptions
-                                ),
-                                content: convertToArrayFormat(updated.contents),
-                              }),
-                            }
-                          );
-
-                          if (!res.ok) throw new Error("Durum güncellenemedi");
-
-                          setSliders((prev) =>
-                            prev.map((s) =>
-                              s.id === slider.id
-                                ? { ...s, isactive: updated.isactive }
-                                : s
-                            )
-                          );
-                          Swal.close();
-                        } catch (err) {
-                          console.error(err);
-                          Swal.fire("Hata", "Durum güncellenemedi", "error");
-                        }
-                      }}
+                      onChange={() => handleToggleActive(slider)}
                     />
                     <span className={styles.slider}></span>
                   </label>
                 </td>
-
                 <td>
                   <Link href={`/slider/content-edit/${slider.id}`}>
                     <button className={styles.editBtn}>

@@ -1,4 +1,3 @@
-/* eslint-disable */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -14,14 +13,6 @@ import styles from "./sliderSort.module.css";
 import Swal from "sweetalert2";
 import Cookies from "js-cookie";
 
-// 👇 Yardımcı format dönüştürücü
-const convertToArrayFormat = (obj) =>
-  Object.entries(obj || {}).map(([langCode, value]) => ({
-    langCode,
-    value,
-  }));
-
-// 👇 Her bir draggable slider kartı
 function SortableItem({ id, image }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });
@@ -49,73 +40,6 @@ export default function SliderSortPage() {
   const [hasDragged, setHasDragged] = useState(false);
   const [sortedSliders, setSortedSliders] = useState([]);
 
-  // 🚀 Sıralama güncellemesi
-  useEffect(() => {
-    if (!hasDragged) return;
-
-    if (sortedSliders.length > 0 && sliders.length > 0) {
-      const updateOrder = async () => {
-        Swal.fire({
-          title: "Sıralama kaydediliyor...",
-          allowOutsideClick: false,
-          didOpen: () => Swal.showLoading(),
-        });
-
-        try {
-          await Promise.all(
-            sortedSliders.map(async (sliderId, index) => {
-              const fullSliderData = sliders.find((s) => s.id === sliderId);
-              if (!fullSliderData) return;
-
-              const payload = {
-                image_url: fullSliderData.image_url,
-                video_url: fullSliderData.video_url,
-                dynamic_link_title: fullSliderData.dynamic_link_title,
-                dynamic_link: fullSliderData.dynamic_link,
-                dynamic_link_alternative:
-                  fullSliderData.dynamic_link_alternative,
-                order: index + 1,
-                isactive: fullSliderData.isactive,
-                titles: convertToArrayFormat(fullSliderData.titles),
-                description: convertToArrayFormat(fullSliderData.descriptions),
-                content: convertToArrayFormat(fullSliderData.contents),
-              };
-
-              const token = Cookies.get("token");
-              const res = await fetch(`/api/sliders?id=${sliderId}`, {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(payload),
-              });
-
-              if (!res.ok)
-                throw new Error(`Slider #${sliderId} güncellenemedi`);
-            })
-          );
-
-          Swal.fire({
-            icon: "success",
-            title: "Sıralama Kaydedildi",
-            text: "Slider sıralaması başarıyla güncellendi.",
-          });
-        } catch (err) {
-          console.error("❌ Sıralama güncelleme hatası:", err);
-          Swal.fire({
-            icon: "error",
-            title: "Hata",
-            text: "Sıralama kaydedilirken bir sorun oluştu.",
-          });
-        }
-      };
-
-      updateOrder();
-    }
-  }, [sortedSliders]);
-
-  // 📦 Sliders'ı çek
   useEffect(() => {
     async function fetchSliders() {
       const res = await fetch("/api/sliders");
@@ -126,7 +50,69 @@ export default function SliderSortPage() {
     fetchSliders();
   }, []);
 
-  // 🎯 Drag & Drop sonrası sıralamayı güncelle
+  useEffect(() => {
+    if (!hasDragged || sliders.length === 0 || sortedSliders.length === 0)
+      return;
+
+    const updateOrder = async () => {
+      Swal.fire({
+        title: "Saving order...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      try {
+        await Promise.all(
+          sortedSliders.map(async (sliderId, index) => {
+            const slider = sliders.find((s) => s.id === sliderId);
+            if (!slider) return;
+
+            const payload = {
+              image_url: slider.image_url,
+              video_url: slider.video_url,
+              dynamic_link_title: slider.dynamic_link_title,
+              dynamic_link: slider.dynamic_link,
+              dynamic_link_alternative: slider.dynamic_link_alternative,
+              order: index + 1,
+              isactive: slider.isactive,
+              title: slider.title,
+              description: slider.description,
+              content: slider.content,
+            };
+
+            const token = Cookies.get("token");
+            const res = await fetch(`/api/sliders?id=${sliderId}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(payload),
+            });
+
+            if (!res.ok)
+              throw new Error(`Slider #${sliderId} could not be updated`);
+          })
+        );
+
+        Swal.fire({
+          icon: "success",
+          title: "Order Saved",
+          text: "Slider order updated successfully.",
+        });
+      } catch (err) {
+        console.error("Update failed:", err);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Failed to save the new order.",
+        });
+      }
+    };
+
+    updateOrder();
+  }, [sortedSliders]);
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (active.id !== over.id) {
@@ -135,7 +121,6 @@ export default function SliderSortPage() {
         sortedSliders.indexOf(active.id),
         sortedSliders.indexOf(over.id)
       );
-
       setSortedSliders(newSorted);
       setHasDragged(true);
 
@@ -151,7 +136,7 @@ export default function SliderSortPage() {
   return (
     <div className={styles.sortWrapper}>
       <div className={styles.column}>
-        <h3>MEVCUT SIRALAMA</h3>
+        <h3>CURRENT ORDER</h3>
         {sliders.map((s, i) => (
           <div key={s.id} className={styles.sortCard}>
             <img src={s.image_url} alt="slider" className={styles.sliderImg} />
@@ -161,7 +146,7 @@ export default function SliderSortPage() {
       </div>
 
       <div className={styles.column}>
-        <h3>YENİDEN SIRALA</h3>
+        <h3>REORDER</h3>
         <DndContext
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}

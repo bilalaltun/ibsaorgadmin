@@ -150,7 +150,6 @@
  *           example: "Detaylı bilgi için tıklayın."
  */
 
-
 import db from "../../../lib/db";
 import { withCors } from "../../../lib/withCors";
 import { verifyToken } from "../../../lib/authMiddleware";
@@ -178,9 +177,11 @@ const handler = async (req, res) => {
       const DEFAULT_CURRENT_PAGE = 1;
 
       const pageSize = parseInt(req.query.pageSize) || DEFAULT_PAGE_SIZE;
-      const currentPage = parseInt(req.query.currentPage) || DEFAULT_CURRENT_PAGE;
+      const currentPage =
+        parseInt(req.query.currentPage) || DEFAULT_CURRENT_PAGE;
       const offset = (currentPage - 1) * pageSize;
-      const hasPagination = req.query.pageSize !== undefined || req.query.currentPage !== undefined;
+      const hasPagination =
+        req.query.pageSize !== undefined || req.query.currentPage !== undefined;
 
       let sliders;
       if (sliderId !== null) {
@@ -206,7 +207,7 @@ const handler = async (req, res) => {
         dynamic_link_alternative: slider.dynamic_link_alternative,
         isactive: slider.isactive,
         order: slider.order,
-        titles: slider.titles,
+        titles: slider.title,
         description: slider.description,
         content: slider.content,
       }));
@@ -249,7 +250,9 @@ const handler = async (req, res) => {
     } = req.body;
 
     if (!titles || typeof titles !== "string") {
-      return res.status(400).json({ error: "titles alanı zorunludur ve string olmalıdır" });
+      return res
+        .status(400)
+        .json({ error: "titles alanı zorunludur ve string olmalıdır" });
     }
 
     try {
@@ -261,7 +264,7 @@ const handler = async (req, res) => {
         dynamic_link_title,
         dynamic_link,
         dynamic_link_alternative,
-        titles,
+        title: titles,
         description,
         content,
       });
@@ -291,7 +294,9 @@ const handler = async (req, res) => {
     } = req.body;
 
     if (!titles || typeof titles !== "string") {
-      return res.status(400).json({ error: "titles alanı zorunludur ve string olmalıdır" });
+      return res
+        .status(400)
+        .json({ error: "titles alanı zorunludur ve string olmalıdır" });
     }
 
     try {
@@ -303,7 +308,7 @@ const handler = async (req, res) => {
         dynamic_link_title,
         dynamic_link,
         dynamic_link_alternative,
-        titles,
+        title: titles,
         description,
         content,
       });
@@ -344,7 +349,9 @@ const handler = async (req, res) => {
     try {
       await db.transaction(async (trx) => {
         for (const item of orders) {
-          await trx("Sliders").where({ id: item.id }).update({ order: item.order });
+          await trx("Sliders")
+            .where({ id: item.id })
+            .update({ order: item.order });
         }
       });
 
