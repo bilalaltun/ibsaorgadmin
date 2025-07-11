@@ -125,23 +125,33 @@ const handler = async (req, res) => {
     }
   }
 
-  // GET
   if (req.method === "GET") {
     try {
-      const pages = await db("CustomTeamPages").where({ isactive: true });
+      const { name } = req.query;
+
+      const pages = await db("CustomTeamPages").where((builder) => {
+        builder.where("isactive", true);
+        if (name && typeof name === "string") {
+          builder.andWhere("name", "like", `%${name}%`);
+        }
+      });
 
       const result = await Promise.all(
         pages.map(async (page) => {
-          const members = await db("CustomTeamMembers").where({ page_id: page.id });
+          const members = await db("CustomTeamMembers").where({
+            page_id: page.id,
+          });
+
           return {
             Page: {
+              id: page.id,
               name: page.name,
               members: members.map((m) => ({
                 name: m.name,
                 email: m.email,
                 position: m.position,
               })),
-            }
+            },
           };
         })
       );
@@ -162,7 +172,9 @@ const handler = async (req, res) => {
     }
 
     try {
-      const [pageId] = await db("CustomTeamPages").insert({ name, isactive }).returning("id");
+      const [pageId] = await db("CustomTeamPages")
+        .insert({ name, isactive })
+        .returning("id");
       const newId = typeof pageId === "object" ? pageId.id : pageId;
 
       for (const member of members) {
@@ -170,7 +182,7 @@ const handler = async (req, res) => {
           page_id: newId,
           name: member.name,
           email: member.email,
-          position: member.position
+          position: member.position,
         });
       }
 
@@ -181,25 +193,42 @@ const handler = async (req, res) => {
     }
   }
 
-  // PUT
-  else if (req.method === "PUT") {
-    const { name, isactive } = req.body;
+// PUT
+else if (req.method === "PUT") {
+  const { name, isactive, members = [] } = req.body;
 
-    if (!id || !name) {
-      return res.status(400).json({ error: "id ve name zorunludur" });
-    }
-
-    try {
-      const updated = await db("CustomTeamPages").where({ id }).update({ name, isactive });
-
-      if (!updated) return res.status(404).json({ error: "Sayfa bulunamadı" });
-
-      res.status(200).json({ success: true });
-    } catch (err) {
-      console.error("[PUT /team]", err);
-      res.status(500).json({ error: "PUT failed", details: err.message });
-    }
+  if (!id || !name) {
+    return res.status(400).json({ error: "id ve name zorunludur" });
   }
+
+  try {
+    // Sayfa bilgisini güncelle
+    const updated = await db("CustomTeamPages")
+      .where({ id })
+      .update({ name, isactive });
+
+    if (!updated) return res.status(404).json({ error: "Sayfa bulunamadı" });
+
+    // Eski üyeleri sil
+    await db("CustomTeamMembers").where({ page_id: id }).del();
+
+    // Yeni üyeleri ekle
+    for (const member of members) {
+      await db("CustomTeamMembers").insert({
+        page_id: id,
+        name: member.name,
+        email: member.email,
+        position: member.position,
+      });
+    }
+
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("[PUT /team]", err);
+    res.status(500).json({ error: "PUT failed", details: err.message });
+  }
+}
+
 
   // DELETE
   else if (req.method === "DELETE") {
@@ -210,7 +239,10 @@ const handler = async (req, res) => {
     try {
       const deleted = await db("CustomTeamPages").where({ id }).del();
 
-      if (!deleted) return res.status(404).json({ error: "Sayfa bulunamadı veya silinemedi" });
+      if (!deleted)
+        return res
+          .status(404)
+          .json({ error: "Sayfa bulunamadı veya silinemedi" });
 
       res.status(200).json({ success: true });
     } catch (err) {

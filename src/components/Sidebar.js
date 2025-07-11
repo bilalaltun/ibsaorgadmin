@@ -27,6 +27,7 @@ import {
   FaUserFriends,
   FaSms,
   FaPage4,
+  FaDownload,
 } from "react-icons/fa"; // Not: bazıları fa'da olabilir, gerektiğinde değiştir
 
 import { useRouter } from "next/navigation";
@@ -114,6 +115,12 @@ export default function Sidebar({ toggleSidebar }) {
           </li>
           <li onClick={() => handleNavigate("/references")}>
             <FaLink /> <span>Partners</span>
+          </li>
+          <li onClick={() => handleNavigate("/downloads")}>
+            <FaDownload /> <span>Downloads</span>
+          </li>
+          <li onClick={() => handleNavigate("/members")}>
+            <FaDownload /> <span>Commitee & Referees</span>
           </li>
         </ul>
 
