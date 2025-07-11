@@ -122,6 +122,12 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/members")}>
             <FaDownload /> <span>Commitee & Referees</span>
           </li>
+          <li onClick={() => handleNavigate("/members")}>
+            <FaDownload /> <span>Banner Image</span>
+          </li>
+          <li onClick={() => handleNavigate("/settings")}>
+            <FaWrench /> <span>Site Settings</span>
+          </li>
         </ul>
 
         {/* <ul className="sidebar-section">
@@ -131,9 +137,7 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/form-data")}>
             <FaWpforms /> <span>Form Submissions</span>
           </li>
-          <li onClick={() => handleNavigate("/settings")}>
-            <FaWrench /> <span>Site Settings</span>
-          </li>
+      
           <li onClick={() => handleNavigate("/cerezler")}>
             <FaCookieBite /> <span>Cookies</span>
           </li>
