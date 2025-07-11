@@ -22,9 +22,11 @@ export default function CreateEventPage() {
     location: "",
     sanction_type: "",
     contact_email: "",
+    contact_name: "",
+    contact_number: "",
     image_url: "",
     description: "",
-    downloads: "",
+    downloads: [], // array of { title, url }
     isactive: true,
   });
 
@@ -33,8 +35,7 @@ export default function CreateEventPage() {
       try {
         const res = await fetch("/api/categories");
         const json = await res.json();
-        const data = await json.data;
-        setCategories(data);
+        setCategories(json.data || []);
       } catch (err) {
         console.error("Failed to fetch categories", err);
       }
@@ -46,22 +47,27 @@ export default function CreateEventPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleDownloadChange = (index, key, value) => {
+    const updated = [...form.downloads];
+    updated[index][key] = value;
+    setForm((prev) => ({ ...prev, downloads: updated }));
+  };
+
+  const addDownload = () => {
+    setForm((prev) => ({
+      ...prev,
+      downloads: [...prev.downloads, { title: "", url: "" }],
+    }));
+  };
+
+  const removeDownload = (index) => {
+    const updated = [...form.downloads];
+    updated.splice(index, 1);
+    setForm((prev) => ({ ...prev, downloads: updated }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (
-      !form.title ||
-      !form.start_date ||
-      !form.end_date ||
-      !form.category_id ||
-      !form.location ||
-      !form.contact_email ||
-      !form.image_url ||
-      !form.description
-    ) {
-      Swal.fire("Warning", "Please fill in all required fields.", "warning");
-      return;
-    }
 
     try {
       Swal.fire({
@@ -157,6 +163,22 @@ export default function CreateEventPage() {
             onChange={(e) => handleChange("contact_email", e.target.value)}
           />
 
+          <label>Contact Name</label>
+          <input
+            className={styles.input}
+            type="text"
+            value={form.contact_name}
+            onChange={(e) => handleChange("contact_name", e.target.value)}
+          />
+
+          <label>Contact Number</label>
+          <input
+            className={styles.input}
+            type="text"
+            value={form.contact_number}
+            onChange={(e) => handleChange("contact_number", e.target.value)}
+          />
+
           <label>Cover Image</label>
           <UploadField
             ref={imageRef}
@@ -175,21 +197,43 @@ export default function CreateEventPage() {
             onChange={(e) => handleChange("description", e.target.value)}
           />
 
-          <label>Download File (PDF)</label>
-          <UploadField
-            ref={fileRef}
-            type="file"
-            accept="application/pdf"
-            label="Upload PDF"
-            onChange={(url) =>
-              handleChange(
-                "downloads",
-                JSON.stringify([{ title: "Invitation", url }])
-              )
-            }
-          />
+          <label>Download Files</label>
+          {form.downloads.map((file, index) => (
+            <div key={index} className={styles.fileCard}>
+              <div className={styles.fileInputs}>
+                <input
+                  type="text"
+                  className={styles.input}
+                  placeholder="File title"
+                  value={file.title}
+                  onChange={(e) =>
+                    handleDownloadChange(index, "title", e.target.value)
+                  }
+                />
+                <UploadField
+                  ref={fileRef}
+                  type="file"
+                  accept="application/pdf"
+                  value={file.url}
+                  label="Upload PDF"
+                  onChange={(url) => handleDownloadChange(index, "url", url)}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => removeDownload(index)}
+                className={styles.removeFileButton}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
 
-          <button type="submit" className={"submitButton"}>
+          <button type="button" onClick={addDownload} className={styles.addBtn}>
+            + Add File
+          </button>
+
+          <button type="submit" className="submitButton">
             CREATE
           </button>
         </form>

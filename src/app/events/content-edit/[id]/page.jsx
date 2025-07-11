@@ -23,9 +23,11 @@ export default function EditEventPage() {
     location: "",
     sanction_type: "",
     contact_email: "",
+    contact_name: "",
+    contact_number: "",
     image_url: "",
     description: "",
-    downloads: "", // JSON string: [{"title":"Invitation", "url":"/file.pdf"}]
+    downloads: [], // array of { title, url }
     isactive: true,
   });
 
@@ -42,8 +44,7 @@ export default function EditEventPage() {
       try {
         const res = await fetch("/api/categories");
         const json = await res.json();
-        const data = await json.data;
-        setCategories(data);
+        setCategories(json.data || []);
       } catch (err) {
         console.error("Failed to fetch categories", err);
       }
@@ -57,7 +58,13 @@ export default function EditEventPage() {
         const res = await fetch(`/api/events?id=${id}`);
         if (!res.ok) throw new Error("Event not found.");
         const data = await res.json();
-        setForm(data);
+        const event = Array.isArray(data.data) ? data.data[0] : data;
+        setForm({
+          ...event,
+          contact_name: event.Contact_name,
+          contact_number: event.Contact_number,
+          downloads: event.downloads || [],
+        });
       } catch (err) {
         console.error(err);
         setError("Failed to load event data.");
@@ -73,18 +80,36 @@ export default function EditEventPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleDownloadChange = (index, key, value) => {
+    const updated = [...form.downloads];
+    updated[index][key] = value;
+    setForm((prev) => ({ ...prev, downloads: updated }));
+  };
+
+  const addDownload = () => {
+    setForm((prev) => ({
+      ...prev,
+      downloads: [...prev.downloads, { title: "", url: "" }],
+    }));
+  };
+
+  const removeDownload = (index) => {
+    const updated = [...form.downloads];
+    updated.splice(index, 1);
+    setForm((prev) => ({ ...prev, downloads: updated }));
+  };
+
   const isFormValid = () => {
     return (
       form.title &&
       form.start_date &&
       form.end_date &&
-      form.category_id &&
       form.location &&
       form.sanction_type &&
       form.contact_email &&
       form.image_url &&
       form.description &&
-      form.downloads
+      form.downloads.length > 0
     );
   };
 
@@ -92,7 +117,11 @@ export default function EditEventPage() {
     e.preventDefault();
 
     if (!isFormValid()) {
-      Swal.fire("Missing Information", "All fields are required.", "warning");
+      Swal.fire(
+        "Missing Information",
+        "All required fields must be filled.",
+        "warning"
+      );
       return;
     }
 
@@ -120,7 +149,11 @@ export default function EditEventPage() {
       );
     } catch (err) {
       console.error(err);
-      Swal.fire("Error", "An error occurred while updating the event.", "error");
+      Swal.fire(
+        "Error",
+        "An error occurred while updating the event.",
+        "error"
+      );
     }
   };
 
@@ -129,112 +162,148 @@ export default function EditEventPage() {
       <div className={styles.container}>
         <h2 className={styles.title}>Edit Event</h2>
 
-        {loading ? (
-          <p>Loading...</p>
-        ) : error ? (
-          <p className={styles.error}>{error}</p>
-        ) : (
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <label>Title</label>
-            <input
-              className={styles.input}
-              type="text"
-              value={form.title}
-              onChange={(e) => handleChange("title", e.target.value)}
-            />
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <label>Title</label>
+          <input
+            className={styles.input}
+            type="text"
+            value={form.title}
+            onChange={(e) => handleChange("title", e.target.value)}
+          />
 
-            <label>Start Date</label>
-            <input
-              className={styles.input}
-              type="date"
-              value={toInputDate(form.start_date)}
-              onChange={(e) => handleChange("start_date", e.target.value)}
-            />
+          <label>Start Date</label>
+          <input
+            className={styles.input}
+            type="date"
+            value={toInputDate(form.start_date)}
+            onChange={(e) => handleChange("start_date", e.target.value)}
+          />
 
-            <label>End Date</label>
-            <input
-              className={styles.input}
-              type="date"
-              value={toInputDate(form.end_date)}
-              onChange={(e) => handleChange("end_date", e.target.value)}
-            />
+          <label>End Date</label>
+          <input
+            className={styles.input}
+            type="date"
+            value={toInputDate(form.end_date)}
+            onChange={(e) => handleChange("end_date", e.target.value)}
+          />
 
-            <label>Category</label>
-            <select
-              className={styles.input}
-              value={form.category_id}
-              onChange={(e) => handleChange("category_id", +e.target.value)}
-            >
-              <option value="">Select category</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+          <label>Category</label>
+          <select
+            className={styles.input}
+            value={form.category_id || ""}
+            onChange={(e) => handleChange("category_id", +e.target.value)}
+          >
+            <option value="">Select category</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
 
-            <label>Location</label>
-            <input
-              className={styles.input}
-              type="text"
-              value={form.location}
-              onChange={(e) => handleChange("location", e.target.value)}
-            />
+          <label>Location</label>
+          <input
+            className={styles.input}
+            type="text"
+            value={form.location}
+            onChange={(e) => handleChange("location", e.target.value)}
+          />
 
-            <label>Sanction Type</label>
-            <input
-              className={styles.input}
-              type="text"
-              value={form.sanction_type}
-              onChange={(e) => handleChange("sanction_type", e.target.value)}
-            />
+          <label>Sanction Type</label>
+          <input
+            className={styles.input}
+            type="text"
+            value={form.sanction_type}
+            onChange={(e) => handleChange("sanction_type", e.target.value)}
+          />
 
-            <label>Contact Email</label>
-            <input
-              className={styles.input}
-              type="email"
-              value={form.contact_email}
-              onChange={(e) => handleChange("contact_email", e.target.value)}
-            />
+          <label>Contact Email</label>
+          <input
+            className={styles.input}
+            type="email"
+            value={form.contact_email}
+            onChange={(e) => handleChange("contact_email", e.target.value)}
+          />
 
-            <label>Cover Image</label>
-            <UploadField
-              ref={imageRef}
-              type="image"
-              accept="image/*"
-              value={form.image_url}
-              label="Upload Cover Image"
-              onChange={(url) => handleChange("image_url", url)}
-            />
+          <label>Contact Name</label>
+          <input
+            className={styles.input}
+            type="text"
+            value={form.contact_name || ""}
+            onChange={(e) => handleChange("contact_name", e.target.value)}
+          />
 
-            <label>Description</label>
-            <textarea
-              className={styles.textarea}
-              rows={4}
-              value={form.description}
-              onChange={(e) => handleChange("description", e.target.value)}
-            />
+          <label>Contact Number</label>
+          <input
+            className={styles.input}
+            type="text"
+            value={form.contact_number || ""}
+            onChange={(e) => handleChange("contact_number", e.target.value)}
+          />
 
-            <label>Download File (PDF)</label>
-            <UploadField
-              ref={fileRef}
-              type="file"
-              accept="application/pdf"
-              value={form.downloads}
-              label="Upload PDF"
-              onChange={(url) =>
-                handleChange(
-                  "downloads",
-                  JSON.stringify([{ title: "Invitation", url }])
-                )
-              }
-            />
+          <label>Cover Image</label>
+          <UploadField
+            ref={imageRef}
+            type="image"
+            accept="image/*"
+            value={form.image_url}
+            label="Upload Cover Image"
+            onChange={(url) => handleChange("image_url", url)}
+          />
 
-            <button type="submit" className="submitButton">
-              UPDATE
-            </button>
-          </form>
-        )}
+          <label>Description</label>
+          <textarea
+            className={styles.textarea}
+            rows={4}
+            value={form.description}
+            onChange={(e) => handleChange("description", e.target.value)}
+          />
+
+          <label>Download Files</label>
+          {form.downloads.map((file, index) => (
+            <div key={index} className={styles.fileCard}>
+              <div className={styles.fileInputs}>
+                <input
+                  type="text"
+                  className={styles.input}
+                  placeholder="File title"
+                  value={file.title}
+                  onChange={(e) =>
+                    handleDownloadChange(index, "title", e.target.value)
+                  }
+                />
+                <UploadField
+                  ref={fileRef}
+                  type="file"
+                  accept="application/pdf"
+                  value={file.url}
+                  label="Upload PDF"
+                  onChange={(url) => handleDownloadChange(index, "url", url)}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => removeDownload(index)}
+                className={styles.removeFileButton}
+                title="Remove file"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={addDownload}
+            className={styles.addBtn}
+          >
+            + Add File
+          </button>
+
+          <button type="submit" className="submitButton">
+            UPDATE
+          </button>
+        </form>
       </div>
     </Layout>
   );
