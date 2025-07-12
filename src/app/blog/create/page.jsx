@@ -46,6 +46,14 @@ export default function CreateBlogPage() {
     fetchCategories();
   }, []);
 
+  const allowedCategories = Cookies.get("user")
+    ? JSON.parse(Cookies.get("user"))?.category_ids || []
+    : [];
+
+  const filteredCategories = categories.filter((category) =>
+    allowedCategories.includes(category.id)
+  );
+
   const handleFormChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -191,7 +199,7 @@ export default function CreateBlogPage() {
               className={styles.input}
             >
               <option value="">Select a category</option>
-              {categories.map((cat) => (
+              {filteredCategories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
                 </option>

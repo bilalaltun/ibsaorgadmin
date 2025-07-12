@@ -18,7 +18,6 @@ export default function BlogContentEditPage() {
   const [error, setError] = useState("");
 
   const [categories, setCategories] = useState([]);
-
   const [staticFields, setStaticFields] = useState({
     link: "",
     thumbnail: "",
@@ -87,6 +86,14 @@ export default function BlogContentEditPage() {
 
     fetchBlog();
   }, [id]);
+
+  const allowedCategories = Cookies.get("user")
+    ? JSON.parse(Cookies.get("user"))?.category_ids || []
+    : [];
+
+  const filteredCategories = categories.filter((category) =>
+    allowedCategories.includes(category.id)
+  );
 
   const handleChange = (key, value) => {
     setStaticFields((prev) => ({ ...prev, [key]: value }));
@@ -233,7 +240,7 @@ export default function BlogContentEditPage() {
                 onChange={(e) => handleChange("category_id", e.target.value)}
               >
                 <option value="">Select a category</option>
-                {categories.map((cat) => (
+                {filteredCategories.map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.name}
                   </option>

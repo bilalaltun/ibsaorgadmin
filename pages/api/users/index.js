@@ -192,21 +192,21 @@ const handler = async (req, res) => {
       }
 
       // Kullanıcı rollerini çek
-      const userIds = users.map(u => u.id);
+      const userIds = users.map((u) => u.id);
       const roles = await db("UserRoles")
         .join("Roles", "UserRoles.role_id", "Roles.id")
         .whereIn("UserRoles.user_id", userIds)
         .select("UserRoles.user_id", "Roles.name as role");
 
       const result = users.map((user) => {
-        const userRole = roles.find(r => r.user_id === user.id);
+        const userRole = roles.find((r) => r.user_id === user.id);
         return {
           id: user.id,
           username: user.username,
           password: user.password,
           isactive: user.isactive,
           date: user.date,
-          role: userRole?.role || null
+          role: userRole?.role || null,
         };
       });
 
@@ -222,26 +222,32 @@ const handler = async (req, res) => {
     const { username, password, isactive, role_id } = req.body;
 
     try {
-      await db.transaction(async trx => {
-        const [userId] = await trx("Users").insert({
-          username,
-          password,
-          isactive,
-          date: new Date(),
-        }).returning("id");
+      const userId = await db.transaction(async (trx) => {
+        // Kullanıcıyı oluştur
+        const [newUserId] = await trx("Users")
+          .insert({
+            username,
+            password,
+            isactive,
+            date: new Date(),
+          })
+          .returning("id"); // Yeni oluşturulan ID'yi al
 
         if (role_id) {
-          await trx("UserRoles").insert({ user_id: userId.id || userId, role_id });
+          // Eğer rol varsa, UserRoles tablosuna da ekle
+          await trx("UserRoles").insert({ user_id: newUserId.id, role_id });
         }
+
+        return newUserId.id; // Yeni kullanıcı ID'sini döndür
       });
 
-      res.status(201).json({ success: true });
+      // Başarıyla kullanıcı oluşturuldu, ID'yi yanıt olarak gönder
+      res.status(201).json({ success: true, userId });
     } catch (err) {
       console.error("[POST /users]", err);
       res.status(500).json({ error: "POST failed", details: err.message });
     }
   }
-
   // PUT
   else if (req.method === "PUT") {
     if (!id) return res.status(400).json({ error: "ID gerekli" });
@@ -249,8 +255,10 @@ const handler = async (req, res) => {
     const { username, password, isactive, date, role_id } = req.body;
 
     try {
-      await db.transaction(async trx => {
-        await trx("Users").where({ id }).update({ username, password, isactive, date });
+      await db.transaction(async (trx) => {
+        await trx("Users")
+          .where({ id })
+          .update({ username, password, isactive, date });
 
         if (role_id) {
           const exists = await trx("UserRoles").where({ user_id: id }).first();

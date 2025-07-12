@@ -13,7 +13,6 @@ export default function CreateEventPage() {
   const imageRef = useRef();
   const fileRef = useRef();
   const [categories, setCategories] = useState([]);
-
   const [form, setForm] = useState({
     title: "",
     start_date: "",
@@ -96,6 +95,14 @@ export default function CreateEventPage() {
     }
   };
 
+  const allowedCategories = Cookies.get("user")
+    ? JSON.parse(Cookies.get("user"))?.category_ids || []
+    : [];
+
+  const filteredCategories = categories.filter((category) =>
+    allowedCategories.includes(category.id)
+  );
+
   return (
     <Layout>
       <div className={styles.container}>
@@ -132,7 +139,7 @@ export default function CreateEventPage() {
             onChange={(e) => handleChange("category_id", +e.target.value)}
           >
             <option value="">Select category</option>
-            {categories.map((c) => (
+            {filteredCategories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>

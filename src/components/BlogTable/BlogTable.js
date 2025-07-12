@@ -14,11 +14,20 @@ export default function BlogTable({ blogs, fetchBlogs }) {
   const [sortField, setSortField] = useState("title");
   const [sortAsc, setSortAsc] = useState(true);
 
+  const allowedCategories = Cookies.get("user")
+    ? JSON.parse(Cookies.get("user"))?.category_ids || []
+    : [];
+
   const filtered = useMemo(() => {
     if (!Array.isArray(blogs)) return [];
-    const query = search.toLowerCase().trim();
-    return blogs.filter((b) => b.title?.toLowerCase().includes(query));
-  }, [search, blogs]);
+    const query = search.toLowerCase();
+
+    return blogs.filter(
+      (blog) =>
+        allowedCategories.includes(blog.category_id) &&
+        blog.title?.toLowerCase().includes(query)
+    );
+  }, [search, blogs, allowedCategories]);
 
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
@@ -203,8 +212,8 @@ export default function BlogTable({ blogs, fetchBlogs }) {
                         blog.thumbnail.startsWith("http")
                           ? blog.thumbnail
                           : blog.thumbnail.startsWith("/")
-                          ? blog.thumbnail
-                          : `/${blog.thumbnail}`
+                            ? blog.thumbnail
+                            : `/${blog.thumbnail}`
                       }
                       alt="cover"
                       className={styles.thumbnail}

@@ -14,7 +14,6 @@ export default function EditEventPage() {
   const imageRef = useRef();
   const fileRef = useRef();
   const [categories, setCategories] = useState([]);
-
   const [form, setForm] = useState({
     title: "",
     start_date: "",
@@ -157,6 +156,14 @@ export default function EditEventPage() {
     }
   };
 
+  const allowedCategories = Cookies.get("user")
+    ? JSON.parse(Cookies.get("user"))?.category_ids || []
+    : [];
+
+  const filteredCategories = categories.filter((category) =>
+    allowedCategories.includes(category.id)
+  );
+
   return (
     <Layout>
       <div className={styles.container}>
@@ -194,7 +201,7 @@ export default function EditEventPage() {
             onChange={(e) => handleChange("category_id", +e.target.value)}
           >
             <option value="">Select category</option>
-            {categories.map((c) => (
+            {filteredCategories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
@@ -292,11 +299,7 @@ export default function EditEventPage() {
             </div>
           ))}
 
-          <button
-            type="button"
-            onClick={addDownload}
-            className={styles.addBtn}
-          >
+          <button type="button" onClick={addDownload} className={styles.addBtn}>
             + Add File
           </button>
 

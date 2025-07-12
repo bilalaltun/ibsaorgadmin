@@ -17,12 +17,23 @@ export default function EventTable() {
   const [sortAsc, setSortAsc] = useState(true);
 
   const fetchEvents = async () => {
+    
+    const categories = JSON.parse(Cookies.get("user"))?.category_ids;
+
     try {
       setLoading(true);
       const res = await fetch("/api/events");
       const json = await res.json();
       const data = json.data;
-      setEvents(data);
+
+      if (categories && categories.length === 0) {
+        setEvents(data);
+      } else {
+        const filteredEvents = data.filter((event) =>
+          categories.includes(event?.category_id)
+        );
+        setEvents(filteredEvents);
+      }
     } catch (error) {
       console.error("Failed to fetch events:", error);
       Swal.fire("Error", "Failed to fetch events", "error");
@@ -30,6 +41,7 @@ export default function EventTable() {
       setLoading(false);
     }
   };
+
   function formatDate(
     dateStr,
     locale = "en-GB",

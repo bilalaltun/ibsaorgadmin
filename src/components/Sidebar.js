@@ -8,16 +8,9 @@ import {
   FaPhone,
   FaImages,
   FaLayerGroup,
-  FaBlog,
   FaWrench,
-  FaLanguage,
   FaWpforms,
   FaListAlt,
-  FaFileAlt,
-  FaInfo,
-  FaHome,
-  FaCookieBite,
-  FaShieldVirus,
   FaFlag,
   FaLink,
   FaNewspaper,
@@ -26,18 +19,30 @@ import {
   FaGlobeEurope,
   FaUserFriends,
   FaSms,
-  FaPage4,
   FaDownload,
 } from "react-icons/fa"; // Not: bazıları fa'da olabilir, gerektiğinde değiştir
-
+import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 
 export default function Sidebar({ toggleSidebar }) {
   const router = useRouter();
+  const userCookie = Cookies.get("user");
+  let role = null;
 
   const handleNavigate = (path) => {
     router.push(path);
   };
+
+  if (userCookie) {
+    try {
+      const parsedUser = JSON.parse(userCookie);
+      role = parsedUser?.role || null;
+    } catch (error) {
+      console.error("Error parsing 'user' cookie:", error);
+    }
+  }
+
+  // Use the role variable safely
 
   return (
     <aside className="sidebar">
@@ -67,74 +72,85 @@ export default function Sidebar({ toggleSidebar }) {
         }}
       />
       <h2 className="sidebar-title">AIF CMS Admin Panel</h2>
-
       <nav>
         <ul className="sidebar-section">
-          <li onClick={() => handleNavigate("/dashboard")}>
-            <FaTachometerAlt /> <span>Dashboard</span>
-          </li>
-          <li onClick={() => handleNavigate("/users")}>
-            <FaUsers /> <span>Users</span>
-          </li>
-          <li onClick={() => handleNavigate("/team-members")}>
-            <FaUserCog /> <span>Team Members</span>
-          </li>
-
-          <li onClick={() => handleNavigate("/categories")}>
-            <FaLayerGroup /> <span>Categories</span>
-          </li>
-          <li onClick={() => handleNavigate("/blog")}>
-            <FaNewspaper /> <span>News</span>
-          </li>
-          <li onClick={() => handleNavigate("/events")}>
-            <FaCalendarAlt /> <span>Events</span>
-          </li>
-          <li onClick={() => handleNavigate("/regions")}>
-            <FaGlobeEurope /> <span>Regions</span>
-          </li>
-          <li onClick={() => handleNavigate("/regions-members")}>
-            <FaUserFriends /> <span>Regions Members</span>
-          </li>
-          <li onClick={() => handleNavigate("/countries")}>
-            <FaFlag /> <span>Countries</span>
-          </li>
-          <li onClick={() => handleNavigate("/countdowns")}>
-            <FaClock /> <span>Countdowns</span>
-          </li>
-          <li onClick={() => handleNavigate("/notifications")}>
-            <FaSms /> <span>Notifications</span>
-          </li>
-          <li onClick={() => handleNavigate("/contact-details")}>
-            <FaPhone /> <span>Contact Info</span>
-          </li>
-          <li onClick={() => handleNavigate("/menus")}>
-            <FaListAlt /> <span>Menus</span>
-          </li>
-          <li onClick={() => handleNavigate("/pages")}>
-            <FaWpforms /> <span>Pages</span>
-          </li>
-          <li onClick={() => handleNavigate("/references")}>
-            <FaLink /> <span>Partners</span>
-          </li>
-          <li onClick={() => handleNavigate("/downloads")}>
-            <FaDownload /> <span>Downloads</span>
-          </li>
-          <li onClick={() => handleNavigate("/members")}>
-            <FaDownload /> <span>Commitee & Referees</span>
-          </li>
-          <li onClick={() => handleNavigate("/banner")}>
-            <FaDownload /> <span>Banner Image</span>
-          </li>
-          <li onClick={() => handleNavigate("/settings")}>
-            <FaWrench /> <span>Site Settings</span>
-          </li>
-          <li onClick={() => handleNavigate("/slider")}>
-            <FaImages /> <span>Slider</span>
-          </li>
+          {role ? (
+            <>
+              {" "}
+              <li onClick={() => handleNavigate("/dashboard")}>
+                <FaTachometerAlt /> <span>Dashboard</span>
+              </li>
+              <li onClick={() => handleNavigate("/users")}>
+                <FaUsers /> <span>Users</span>
+              </li>
+              <li onClick={() => handleNavigate("/team-members")}>
+                <FaUserCog /> <span>Team Members</span>
+              </li>
+              <li onClick={() => handleNavigate("/categories")}>
+                <FaLayerGroup /> <span>Categories</span>
+              </li>
+              <li onClick={() => handleNavigate("/regions")}>
+                <FaGlobeEurope /> <span>Regions</span>
+              </li>
+              <li onClick={() => handleNavigate("/regions-members")}>
+                <FaUserFriends /> <span>Regions Members</span>
+              </li>
+              <li onClick={() => handleNavigate("/countries")}>
+                <FaFlag /> <span>Countries</span>
+              </li>
+              <li onClick={() => handleNavigate("/blog")}>
+                <FaNewspaper /> <span>News</span>
+              </li>
+              <li onClick={() => handleNavigate("/events")}>
+                <FaCalendarAlt /> <span>Events</span>
+              </li>
+              <li onClick={() => handleNavigate("/countdowns")}>
+                <FaClock /> <span>Countdowns</span>
+              </li>
+              <li onClick={() => handleNavigate("/notifications")}>
+                <FaSms /> <span>Notifications</span>
+              </li>
+              <li onClick={() => handleNavigate("/contact-details")}>
+                <FaPhone /> <span>Contact Info</span>
+              </li>
+              <li onClick={() => handleNavigate("/menus")}>
+                <FaListAlt /> <span>Menus</span>
+              </li>
+              <li onClick={() => handleNavigate("/pages")}>
+                <FaWpforms /> <span>Pages</span>
+              </li>
+              <li onClick={() => handleNavigate("/references")}>
+                <FaLink /> <span>Partners</span>
+              </li>
+              <li onClick={() => handleNavigate("/downloads")}>
+                <FaDownload /> <span>Downloads</span>
+              </li>
+              <li onClick={() => handleNavigate("/members")}>
+                <FaDownload /> <span>Commitee & Referees</span>
+              </li>
+              <li onClick={() => handleNavigate("/banner")}>
+                <FaDownload /> <span>Banner Image</span>
+              </li>
+              <li onClick={() => handleNavigate("/settings")}>
+                <FaWrench /> <span>Site Settings</span>
+              </li>
+              <li onClick={() => handleNavigate("/slider")}>
+                <FaImages /> <span>Slider</span>
+              </li>
+            </>
+          ) : (
+            <>
+              <li onClick={() => handleNavigate("/blog")}>
+                <FaNewspaper /> <span>News</span>
+              </li>
+              <li onClick={() => handleNavigate("/events")}>
+                <FaCalendarAlt /> <span>Events</span>
+              </li>
+            </>
+          )}
         </ul>
 
         {/* <ul className="sidebar-section">
-          
           <li onClick={() => handleNavigate("/form-data")}>
             <FaWpforms /> <span>Form Submissions</span>
           </li>
@@ -148,7 +164,6 @@ export default function Sidebar({ toggleSidebar }) {
           <li onClick={() => handleNavigate("/banner")}>
              <FaFlag /> <span>Banner</span>
           </li>
-     
         </ul> */}
       </nav>
     </aside>

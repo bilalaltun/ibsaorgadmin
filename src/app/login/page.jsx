@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import Cookies from "js-cookie";
 import styles from "./login.module.css";
-import NextImage from "next/image";
-
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,12 +33,14 @@ export default function LoginPage() {
 
       if (response.ok) {
         Cookies.set("token", data.token, {
-          expires: 1, // gün olarak
+          expires: 1,
           path: "/",
         });
-
+        Cookies.set("user", JSON.stringify(data.user), {
+          expires: 1,
+        });
         Cookies.set("username", username, {
-          expires: 1, // gün olarak
+          expires: 1,
         });
 
         Swal.fire({
@@ -84,13 +84,15 @@ export default function LoginPage() {
           alt="Mızrak Makine"
           className={styles.loginImage}
         />
-
-
       </div>
 
       <div className={styles.rightPane}>
         <div className={styles.logo}>
-          <img src="/images/logo-dark.svg" alt="Logo" className={styles.logoImg} />
+          <img
+            src="/images/logo-dark.svg"
+            alt="Logo"
+            className={styles.logoImg}
+          />
         </div>
 
         <h2 className={styles.title}>Admin Panel Login</h2>
