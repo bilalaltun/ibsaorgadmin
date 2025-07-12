@@ -43,33 +43,45 @@
  *                   example: true
  *
  *   put:
- *     summary: Kategori yetkisini güncelle *
+ *     summary: Kullanıcının birden fazla kategoriye ait yetkilerini güncelle (tüm yetkiler true atanır) *
  *     tags: [CategoryPermissions]
  *     parameters:
  *       - in: query
- *         name: id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: integer
- *         description: Güncellenecek izin kaydının ID'si *
+ *         description: Güncelleme yapılacak kullanıcının ID'si *
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - category_ids
  *             properties:
- *               can_create:
- *                 type: boolean
- *               can_read:
- *                 type: boolean
- *               can_update:
- *                 type: boolean
- *               can_delete:
- *                 type: boolean
+ *               category_ids:
+ *                 type: array
+ *                 description: Güncellenecek kategorilerin ID listesi
+ *                 items:
+ *                   type: integer
+ *                 example: [1, 2, 3]
  *     responses:
  *       200:
- *         description: Güncelleme başarılı *
+ *         description: Tüm kategoriler için yetkiler başarıyla güncellendi *
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *       400:
+ *         description: Eksik veya hatalı parametre *
+ *       500:
+ *         description: Sunucu hatası *
  *
  *   delete:
  *     summary: Kategori yetkisini sil *
@@ -137,6 +149,7 @@
  *           type: boolean
  *           default: false
  */
+
 
 
 import db from "../../../lib/db";
@@ -229,18 +242,44 @@ else if (req.method === "POST") {
 
   //PUT
 else if (req.method === "PUT") {
-  const { can_create, can_read, can_update, can_delete } = req.body;
-  const { id } = req.query; // Now fetching ID from query
+  const { user_id } = req.query;
+  const { category_ids } = req.body;
 
-  if (!id) return res.status(400).json({ error: "ID query parametresi gerekli" });
+  if (!user_id || !Array.isArray(category_ids)) {
+    return res.status(400).json({ error: "user_id ve geçerli category_ids dizisi zorunludur" });
+  }
 
   try {
-    await db("Permissions").where({ id }).update({
-      can_create,
-      can_read,
-      can_update,
-      can_delete,
-    });
+    // 1. Güncelleme veya ekleme (upsert gibi çalışacak)
+    for (const category_id of category_ids) {
+      if (typeof category_id !== "number") continue;
+
+      const updated = await db("Permissions")
+        .where({ user_id, category_id })
+        .update({
+          can_create: true,
+          can_read: true,
+          can_update: true,
+          can_delete: true,
+        });
+
+      if (updated === 0) {
+        await db("Permissions").insert({
+          user_id,
+          category_id,
+          can_create: true,
+          can_read: true,
+          can_update: true,
+          can_delete: true,
+        });
+      }
+    }
+
+    // 2. Diğer kategorilere ait yetkileri sil
+    await db("Permissions")
+      .where("user_id", user_id)
+      .whereNotIn("category_id", category_ids)
+      .del();
 
     res.status(200).json({ success: true });
   } catch (err) {
@@ -248,6 +287,8 @@ else if (req.method === "PUT") {
     res.status(500).json({ error: "PUT failed", details: err.message });
   }
 }
+
+
 
 
   // DELETE: Yetkiyi kaldır
