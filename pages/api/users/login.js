@@ -68,6 +68,7 @@ const handler = async (req, res) => {
   const { username, password } = req.body;
 
   try {
+    // Kullanıcı bilgilerini al
     const user = await db("Users as u")
       .leftJoin("UserRoles as ur", "u.id", "ur.user_id")
       .leftJoin("Roles as r", "ur.role_id", "r.id")
@@ -86,13 +87,17 @@ const handler = async (req, res) => {
       return res.status(401).json({ error: "Invalid username or password" });
     }
 
+    // Kullanıcının izinli olduğu category_id'leri getir
+    const permissions = await db("Permissions")
+      .where({ user_id: user.id })
+      .pluck("category_id");
+
     const token = jwt.sign(
       {
         id: user.id,
         username: user.username,
         isactive: user.isactive,
         role: user.role,
-
       },
       "kjhgfdJHGFDSDFGH9876rfghGFDS84",
       { expiresIn: "7d" }
@@ -106,6 +111,7 @@ const handler = async (req, res) => {
         isactive: user.isactive,
         role: user.role,
         date: user.date,
+        category_ids: permissions, // 🔥 Burada category_id dizisi dönüyor
       },
     });
   } catch (err) {
