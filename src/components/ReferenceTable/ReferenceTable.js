@@ -181,12 +181,7 @@ export default function ReferansTable() {
                 <td>{(currentPage - 1) * pageSize + i + 1}</td>
                 <td>
                   {item.img && (
-                    <img
-                      src={item.img}
-                      alt="Reference"
-                      height={50}
-                      unoptimized
-                    />
+                    <img src={item.img} alt="Reference" height={50} />
                   )}
                 </td>
                 <td>{item.name || "-"}</td>

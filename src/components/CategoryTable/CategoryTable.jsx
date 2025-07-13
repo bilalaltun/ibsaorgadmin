@@ -15,7 +15,7 @@ export default function CategoryTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
-
+  const [totalPages, setTotalPages] = useState(1);
   useEffect(() => {
     async function fetchCategories() {
       try {
@@ -25,6 +25,8 @@ export default function CategoryTable() {
         if (!res.ok) throw new Error("Failed to fetch data");
         const data = await res.json();
         setCategories(data.data);
+        console.log(data.pagination.totalPages)
+        setTotalPages(data.pagination.totalPages);
       } catch {
         setError("Failed to load category data.");
       }
@@ -55,8 +57,6 @@ export default function CategoryTable() {
     const start = (currentPage - 1) * pageSize;
     return sorted.slice(start, start + pageSize);
   }, [sorted, currentPage, pageSize]);
-
-  const totalPages = Math.ceil(filtered.length / pageSize);
 
   const handleSort = (field) => {
     if (sortField === field) setSortAsc(!sortAsc);
@@ -137,9 +137,7 @@ export default function CategoryTable() {
         <thead>
           <tr>
             <th>#</th>
-            <th onClick={() => handleSort("name")}>
-              Name
-            </th>
+            <th onClick={() => handleSort("name")}>Name</th>
             <th>Actions</th>
           </tr>
         </thead>

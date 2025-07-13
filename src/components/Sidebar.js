@@ -20,29 +20,29 @@ import {
   FaUserFriends,
   FaSms,
   FaDownload,
-} from "react-icons/fa"; // Not: bazıları fa'da olabilir, gerektiğinde değiştir
+} from "react-icons/fa";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Sidebar({ toggleSidebar }) {
   const router = useRouter();
-  const userCookie = Cookies.get("user");
-  let role = null;
-
+  const [role, setRole] = useState(null);
   const handleNavigate = (path) => {
     router.push(path);
   };
 
-  if (userCookie) {
-    try {
-      const parsedUser = JSON.parse(userCookie);
-      role = parsedUser?.role || null;
-    } catch (error) {
-      console.error("Error parsing 'user' cookie:", error);
+  useEffect(() => {
+    const userCookie = Cookies.get("user");
+    if (userCookie) {
+      try {
+        const parsedUser = JSON.parse(userCookie);
+        setRole(parsedUser?.role || null);
+      } catch (error) {
+        console.error("Error parsing 'user' cookie:", error);
+      }
     }
-  }
-
-  // Use the role variable safely
+  }, []);
 
   return (
     <aside className="sidebar">
@@ -76,7 +76,6 @@ export default function Sidebar({ toggleSidebar }) {
         <ul className="sidebar-section">
           {role ? (
             <>
-              {" "}
               <li onClick={() => handleNavigate("/dashboard")}>
                 <FaTachometerAlt /> <span>Dashboard</span>
               </li>

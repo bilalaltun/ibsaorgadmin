@@ -99,9 +99,12 @@ export default function CreateEventPage() {
     ? JSON.parse(Cookies.get("user"))?.category_ids || []
     : [];
 
-  const filteredCategories = categories.filter((category) =>
-    allowedCategories.includes(category.id)
-  );
+  const filteredCategories =
+    allowedCategories.length === 0
+      ? categories
+      : categories.filter((category) =>
+          allowedCategories.includes(category.id)
+        );
 
   return (
     <Layout>

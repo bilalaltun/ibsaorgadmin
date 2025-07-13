@@ -50,9 +50,12 @@ export default function CreateBlogPage() {
     ? JSON.parse(Cookies.get("user"))?.category_ids || []
     : [];
 
-  const filteredCategories = categories.filter((category) =>
-    allowedCategories.includes(category.id)
-  );
+  const filteredCategories =
+    allowedCategories.length === 0
+      ? categories
+      : categories.filter((category) =>
+          allowedCategories.includes(category.id)
+        );
 
   const handleFormChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));

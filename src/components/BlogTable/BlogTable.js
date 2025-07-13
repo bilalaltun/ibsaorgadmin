@@ -21,12 +21,13 @@ export default function BlogTable({ blogs, fetchBlogs }) {
   const filtered = useMemo(() => {
     if (!Array.isArray(blogs)) return [];
     const query = search.toLowerCase();
-
-    return blogs.filter(
-      (blog) =>
-        allowedCategories.includes(blog.category_id) &&
-        blog.title?.toLowerCase().includes(query)
-    );
+    return allowedCategories.length === 0
+      ? blogs
+      : blogs.filter(
+          (blog) =>
+            allowedCategories.includes(blog.category_id) &&
+            blog.title?.toLowerCase().includes(query)
+        );
   }, [search, blogs, allowedCategories]);
 
   const sorted = useMemo(() => {
