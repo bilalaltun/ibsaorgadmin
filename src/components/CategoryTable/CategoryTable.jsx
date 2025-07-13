@@ -11,7 +11,7 @@ export default function CategoryTable() {
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(1000);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState("name");
   const [sortAsc, setSortAsc] = useState(true);
