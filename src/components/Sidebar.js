@@ -1,6 +1,3 @@
-/* eslint-disable */
-"use client";
-
 import {
   FaTachometerAlt,
   FaUserCog,
@@ -20,6 +17,8 @@ import {
   FaUserFriends,
   FaSms,
   FaDownload,
+  FaClipboardList, // Used for "Commitee & Referees"
+  FaImage, // Used for "Banner Image"
 } from "react-icons/fa";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
@@ -125,10 +124,10 @@ export default function Sidebar({ toggleSidebar }) {
                 <FaDownload /> <span>Downloads</span>
               </li>
               <li onClick={() => handleNavigate("/members")}>
-                <FaDownload /> <span>Commitee & Referees</span>
+                <FaClipboardList /> <span>Commitee & Referees</span>
               </li>
               <li onClick={() => handleNavigate("/banner")}>
-                <FaDownload /> <span>Banner Image</span>
+                <FaImage /> <span>Banner Image</span>
               </li>
               <li onClick={() => handleNavigate("/settings")}>
                 <FaWrench /> <span>Site Settings</span>
@@ -148,22 +147,6 @@ export default function Sidebar({ toggleSidebar }) {
             </>
           )}
         </ul>
-
-        {/* <ul className="sidebar-section">
-          <li onClick={() => handleNavigate("/form-data")}>
-            <FaWpforms /> <span>Form Submissions</span>
-          </li>
-      
-          <li onClick={() => handleNavigate("/cerezler")}>
-            <FaCookieBite /> <span>Cookies</span>
-          </li>
-          <li onClick={() => handleNavigate("/kvkk")}>
-            <FaShieldVirus /> <span>Privacy Policy</span>
-          </li>
-          <li onClick={() => handleNavigate("/banner")}>
-             <FaFlag /> <span>Banner</span>
-          </li>
-        </ul> */}
       </nav>
     </aside>
   );
