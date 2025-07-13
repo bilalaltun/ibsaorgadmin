@@ -241,7 +241,7 @@ const handler = async (req, res) => {
             switch (req.method) {
                 case "GET": {
                     const currentPage = parseInt(req.query.currentPage || "1");
-                    const pageSize = parseInt(req.query.pageSize || "10");
+                    const pageSize = parseInt(req.query.pageSize || "1000");
                     const offset = (currentPage - 1) * pageSize;
 
                     const query = db("Subcategories")
