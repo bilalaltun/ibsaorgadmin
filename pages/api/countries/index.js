@@ -176,7 +176,7 @@ const handler = async (req, res) => {
 
   if (req.method === "GET") {
     try {
-      const { pageSize = 10, currentPage = 1, region_id } = req.query;
+      const { pageSize = 1000, currentPage = 1, region_id } = req.query;
       const pageInt = parseInt(pageSize);
       const currentPageInt = parseInt(currentPage);
 

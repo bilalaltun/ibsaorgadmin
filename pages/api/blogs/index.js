@@ -230,7 +230,7 @@ const handler = async (req, res) => {
   // GET /api/blogs
   if (req.method === "GET") {
     try {
-      let { id, link, category_id, pageSize = 10, currentPage = 1 } = req.query;
+      let { id, link, category_id, pageSize = 1000, currentPage = 1 } = req.query;
 
       // category_id'yi normalize et (tekil veya dizi olabilir)
       const categoryIds = Array.isArray(category_id)

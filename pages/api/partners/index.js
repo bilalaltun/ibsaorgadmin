@@ -185,7 +185,7 @@ if (["POST", "PUT", "DELETE"].includes(req.method)) {
   // GET -
   if (req.method === "GET") {
     try {
-      const { pageSize = 10, currentPage = 1 } = req.query;
+      const { pageSize = 1000, currentPage = 1 } = req.query;
       const pageInt = parseInt(pageSize);
       const currentPageInt = parseInt(currentPage);
 

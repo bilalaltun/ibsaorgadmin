@@ -237,7 +237,7 @@ const handler = async (req, res) => {
 
   if (method === "GET") {
     try {
-      let { category_id, pageSize = 10, currentPage = 1 } = req.query;
+      let { category_id, pageSize = 1000, currentPage = 1 } = req.query;
 
       const categoryIds = Array.isArray(category_id)
         ? category_id.map((id) => parseInt(id))

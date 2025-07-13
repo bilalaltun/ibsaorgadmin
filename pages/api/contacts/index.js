@@ -178,7 +178,7 @@ const handler = async (req, res) => {
   // GET
   if (req.method === "GET") {
     try {
-      const { id, pageSize = 10, currentPage = 1 } = req.query;
+      const { id, pageSize = 1000, currentPage = 1 } = req.query;
       const limit = parseInt(pageSize);
       const page = parseInt(currentPage);
       const offset = (page - 1) * limit;

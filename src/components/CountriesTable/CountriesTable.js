@@ -172,13 +172,11 @@ export default function CountriesTable() {
           <tr>
             <th>#</th>
             <th onClick={() => handleSort("name")}>
-              Country {sortField === "name" && (sortAsc ? <FaSortUp /> : <FaSortDown />)}
+              Country{" "}
+              {sortField === "name" &&
+                (sortAsc ? <FaSortUp /> : <FaSortDown />)}
             </th>
             <th>Federation</th>
-            <th>Directory</th>
-            <th>Address</th>
-            <th>Phone</th>
-            <th>Email</th>
             <th>Flag</th>
             <th>Region</th>
             {/* <th>Status</th> */}
@@ -198,10 +196,6 @@ export default function CountriesTable() {
                 <td>{(currentPage - 1) * pageSize + i + 1}</td>
                 <td>{c.name}</td>
                 <td>{c.federation_name}</td>
-                <td>{c.directory}</td>
-                <td>{c.address}</td>
-                <td>{c.phone}</td>
-                <td>{c.email}</td>
                 <td>
                   {c.flag_url ? (
                     <img src={c.flag_url} alt="flag" style={{ width: 24 }} />
