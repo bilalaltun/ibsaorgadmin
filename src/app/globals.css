@@ -936,3 +936,106 @@ input[type="file"] {
 .logo {
   height: 40px;
 }
+
+/* === RESPONSIVE: Mobil ve Tablet için === */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 100vw;
+    min-width: 0;
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .main-layout {
+    padding: 0.5rem;
+  }
+  .navbar {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+  }
+  .navbar .hamburger {
+    display: block;
+    font-size: 2rem;
+    cursor: pointer;
+  }
+  .content {
+    padding: 0.5rem;
+  }
+  .form-container {
+    padding: 1rem;
+    max-width: 100vw;
+  }
+  .form {
+    gap: 1rem;
+  }
+  .submitButton, .submit-btn {
+    width: 100%;
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+  }
+  .slider-table, .table-max, table {
+    max-width: 100vw;
+    overflow-x: auto;
+    display: block;
+  }
+  th, td {
+    font-size: 14px;
+    padding: 8px 4px;
+  }
+  .image, img, video, iframe {
+    max-width: 100%;
+    height: auto;
+  }
+  .langTabs {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .sidebar {
+    width: 100vw;
+    min-width: 0;
+    font-size: 15px;
+    padding: 0.5rem 0.25rem;
+  }
+  .sidebar-title {
+    font-size: 1rem;
+  }
+  .main-layout, .content {
+    padding: 0.25rem;
+  }
+  .form-container {
+    padding: 0.5rem;
+    border-radius: 8px;
+  }
+  .form-title {
+    font-size: 18px;
+  }
+  .form-input, .form-textarea {
+    font-size: 13px;
+    padding: 8px;
+  }
+  .submitButton, .submit-btn {
+    font-size: 0.95rem;
+    padding: 0.5rem 0.5rem;
+  }
+  th, td {
+    font-size: 12px;
+    padding: 6px 2px;
+  }
+  .langTabs button {
+    width: 100%;
+    min-width: 0;
+    font-size: 13px;
+    padding: 0.4rem 0.5rem;
+  }
+}

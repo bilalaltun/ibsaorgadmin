@@ -16,7 +16,7 @@ export default function LoginPage() {
 
     try {
       Swal.fire({
-        title: "Giriş yapılıyor...",
+        title: "Logging in...",
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading(),
       });
@@ -45,8 +45,8 @@ export default function LoginPage() {
 
         Swal.fire({
           icon: "success",
-          title: "Giriş Başarılı",
-          text: "Yönlendiriliyorsunuz...",
+          title: "Login Successful",
+          text: "Redirecting...",
           timer: 1500,
           showConfirmButton: false,
         }).then(() => {
@@ -55,15 +55,15 @@ export default function LoginPage() {
       } else {
         Swal.fire({
           icon: "error",
-          title: "Hatalı Giriş",
-          text: data.message || "Kullanıcı adı veya şifre hatalı.",
+          title: "Login Failed",
+          text: data.message || "Incorrect username or password.",
         });
       }
     } catch (error) {
       Swal.fire({
         icon: "error",
-        title: "Sunucu Hatası",
-        text: "Giriş sırasında bir hata oluştu.",
+        title: "Server Error",
+        text: "An error occurred during login.",
       });
       console.error("Login error:", error);
     }
@@ -100,7 +100,7 @@ export default function LoginPage() {
         <form className={styles.loginForm} onSubmit={handleLogin}>
           <input
             type="text"
-            placeholder="Kullanıcı Adı"
+            placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className={styles.input}
@@ -108,14 +108,14 @@ export default function LoginPage() {
           />
           <input
             type="password"
-            placeholder="Parola"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={styles.input}
             required
           />
           <button type="submit" className={styles.loginButton}>
-            Giriş
+            Login
           </button>
         </form>
       </div>

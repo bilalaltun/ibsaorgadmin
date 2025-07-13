@@ -158,11 +158,13 @@
 import db from "../../../lib/db";
 import { withCors } from "../../../lib/withCors";
 import { verifyToken } from "../../../lib/authMiddleware";
+import { hashPassword, validatePassword } from "../../../lib/passwordUtils";
 
 const handler = async (req, res) => {
   const id = req.query.id ? parseInt(req.query.id) : null;
 
-  if (["POST", "PUT", "DELETE"].includes(req.method)) {
+  // Tüm endpoint'ler için token kontrolü
+  if (["GET", "POST", "PUT", "DELETE"].includes(req.method)) {
     try {
       await verifyToken(req); // req.user ayarlanmalı
     } catch (err) {
@@ -203,7 +205,7 @@ const handler = async (req, res) => {
         return {
           id: user.id,
           username: user.username,
-          password: user.password,
+          // password: user.password, // Güvenlik için şifre response'dan çıkarıldı
           isactive: user.isactive,
           date: user.date,
           role: userRole?.role || null,
@@ -221,13 +223,25 @@ const handler = async (req, res) => {
   else if (req.method === "POST") {
     const { username, password, isactive, role_id } = req.body;
 
+    // Şifre validasyonu
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return res.status(400).json({ 
+        error: "Şifre güvenlik gereksinimlerini karşılamıyor", 
+        details: passwordValidation.errors 
+      });
+    }
+
     try {
+      // Şifreyi hash'le
+      const hashedPassword = await hashPassword(password);
+
       const userId = await db.transaction(async (trx) => {
         // Kullanıcıyı oluştur
         const [newUserId] = await trx("Users")
           .insert({
             username,
-            password,
+            password: hashedPassword, // Hash'lenmiş şifre
             isactive,
             date: new Date(),
           })
@@ -256,9 +270,20 @@ const handler = async (req, res) => {
 
     try {
       await db.transaction(async (trx) => {
+        const updateData = { username, isactive, date };
+        
+        // Eğer şifre güncellenecekse hash'le
+        if (password) {
+          const passwordValidation = validatePassword(password);
+          if (!passwordValidation.isValid) {
+            throw new Error(`Şifre güvenlik gereksinimlerini karşılamıyor: ${passwordValidation.errors.join(', ')}`);
+          }
+          updateData.password = await hashPassword(password);
+        }
+
         await trx("Users")
           .where({ id })
-          .update({ username, password, isactive, date });
+          .update(updateData);
 
         if (role_id) {
           const exists = await trx("UserRoles").where({ user_id: id }).first();

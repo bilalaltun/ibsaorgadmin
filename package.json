@@ -6,7 +6,8 @@
     "dev": "next dev -p 3020",
     "build": "next build",
     "start": "next start -p 3020",
-    "lint": "next lint"
+    "lint": "next lint",
+    "hash-passwords": "node scripts/hashExistingPasswords.js"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^44.3.0",
@@ -34,6 +35,7 @@
     "@lexical/yjs": "^0.31.2",
     "@prisma/client": "^6.8.0",
     "@tinymce/tinymce-react": "^6.1.0",
+    "bcryptjs": "^3.0.2",
     "browser-image-compression": "^2.0.2",
     "dotenv": "^16.5.0",
     "draft-js": "^0.11.7",

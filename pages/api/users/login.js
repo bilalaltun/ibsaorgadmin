@@ -59,6 +59,7 @@
 import db from "../../../lib/db";
 import jwt from "jsonwebtoken";
 import { withCors } from "../../../lib/withCors";
+import { verifyPassword } from "../../../lib/passwordUtils";
 
 const handler = async (req, res) => {
   if (req.method !== "POST") {
@@ -80,10 +81,16 @@ const handler = async (req, res) => {
         "u.date",
         "r.name as role"
       )
-      .where({ "u.username": username, "u.password": password })
+      .where({ "u.username": username })
       .first();
 
     if (!user || user.isactive !== true) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+
+    // Şifreyi doğrula
+    const isPasswordValid = await verifyPassword(password, user.password);
+    if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid username or password" });
     }
 

@@ -28,10 +28,15 @@ export default function EditUserPage() {
   const [existingPermissionMap, setExistingPermissionMap] = useState({}); // key = category_id, value = permission_id
 
   useEffect(() => {
-    async function fetchUserAndCategories() {
+    async function fetchUserAndCategories() { 
       try {
+        const token = Cookies.get("token");
         const [userRes, catRes, permRes] = await Promise.all([
-          fetch(`/api/users?id=${id}`),
+          fetch(`/api/users?id=${id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
           fetch(`/api/categories`),
           fetch(`/api/categorypermissions?user_id=${id}`),
         ]);
@@ -49,9 +54,10 @@ export default function EditUserPage() {
         setCategories(categoryData.data || []);
 
         const permData = await permRes.json();
+        const permArray = Array.isArray(permData) ? permData : (permData?.data || []);
         const userCategories = new Set();
         const permMap = {};
-        permData.forEach((p) => {
+        permArray.forEach((p) => {
           if (p.can_create || p.can_read || p.can_update || p.can_delete) {
             userCategories.add(p.category_id);
             permMap[p.category_id] = p.id; // store permission row ID for PUT

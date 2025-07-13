@@ -14,7 +14,12 @@ export default function UserTable() {
   const [users, setUsers] = useState([]);
 
   const fetchUsers = async () => {
-    const res = await fetch("/api/users");
+    const token = Cookies.get("token");
+    const res = await fetch("/api/users", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     const json = await res.json();
     setUsers(json);
   };

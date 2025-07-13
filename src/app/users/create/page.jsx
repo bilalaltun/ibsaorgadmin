@@ -80,7 +80,7 @@ export default function EditUserPage() {
   };
 
   const isFormValid = () => {
-    return form.username.trim();
+    return form.username.trim() && selectedCategories.size > 0;
   };
 
   const hasChanges = () => {
@@ -102,7 +102,9 @@ export default function EditUserPage() {
       Swal.fire({
         icon: "warning",
         title: "Missing Information",
-        text: "Username is required.",
+        text: selectedCategories.size === 0
+          ? "At least one category must be selected."
+          : "Username is required.",
       });
       return;
     }
@@ -138,9 +140,16 @@ export default function EditUserPage() {
         body: JSON.stringify(updateData),
       });
 
-      if (!userRes.ok) throw new Error("User update failed");
-
       const userResponse = await userRes.json();
+
+      if (!userRes.ok) {
+        let errorMsg = userResponse.error || "User creation failed.";
+        if (userResponse.details && Array.isArray(userResponse.details)) {
+          errorMsg += "\n" + userResponse.details.join("\n");
+        }
+        throw new Error(errorMsg);
+      }
+
       const userId = userResponse.userId; // Ensure the API returns the userId
 
       const newCategories = Array.from(selectedCategories);
@@ -171,11 +180,10 @@ export default function EditUserPage() {
         text: "User and permissions created successfully.",
       }).then(() => router.push("/users"));
     } catch (err) {
-      console.error(err);
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: "An error occurred during update.",
+        text: err?.message || "An error occurred during user creation.",
       });
     }
   };

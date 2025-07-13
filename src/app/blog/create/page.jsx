@@ -14,6 +14,7 @@ export default function CreateBlogPage() {
   const imageRef = useRef();
 
   const [categories, setCategories] = useState([]);
+  const [isSlugEdited, setIsSlugEdited] = useState(false);
 
   const [form, setForm] = useState({
     link: "",
@@ -46,6 +47,19 @@ export default function CreateBlogPage() {
     fetchCategories();
   }, []);
 
+  // Slug otomatik güncelleme effect'i
+  useEffect(() => {
+    if (!isSlugEdited && form.title) {
+      const generatedSlug = form.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-");
+      setForm((prev) => ({ ...prev, link: generatedSlug }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.title]);
+
   const allowedCategories = Cookies.get("user")
     ? JSON.parse(Cookies.get("user"))?.category_ids || []
     : [];
@@ -59,6 +73,8 @@ export default function CreateBlogPage() {
 
   const handleFormChange = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+    if (key === "link") setIsSlugEdited(true);
+    if (key === "title" && isSlugEdited) return; // elle override edilmişse slug'ı değiştirme
   };
 
   const isFormValid = () => {
@@ -162,13 +178,7 @@ export default function CreateBlogPage() {
               className={styles.input}
               placeholder="e.g. blog/ipsa-cnc-tech"
               value={form.link}
-              onChange={(e) => {
-                const rawValue = e.target.value;
-                const sanitizedValue = rawValue
-                  .toLowerCase()
-                  .replace(/[^a-z0-9\-\/]/g, "");
-                handleFormChange("link", sanitizedValue);
-              }}
+              onChange={(e) => handleFormChange("link", e.target.value)}
             />
 
             <label>Date</label>
