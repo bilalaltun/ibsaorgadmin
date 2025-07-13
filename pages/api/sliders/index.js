@@ -173,7 +173,7 @@ const handler = async (req, res) => {
         return res.status(400).json({ error: "Geçersiz ID formatı" });
       }
 
-      const DEFAULT_PAGE_SIZE = 10;
+      const DEFAULT_PAGE_SIZE = 1000;
       const DEFAULT_CURRENT_PAGE = 1;
 
       const pageSize = parseInt(req.query.pageSize) || DEFAULT_PAGE_SIZE;

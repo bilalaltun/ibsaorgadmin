@@ -220,7 +220,7 @@ const handler = async (req, res) => {
       const submenuIdParam = req.query.submenu_id;
       const linkParam = req.query.link;
 
-      const pageSize = parseInt(req.query.pageSize) || 10;
+      const pageSize = parseInt(req.query.pageSize) || 1000;
       const currentPage = parseInt(req.query.currentPage) || 1;
       const offset = (currentPage - 1) * pageSize;
 

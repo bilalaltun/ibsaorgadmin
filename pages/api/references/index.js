@@ -202,7 +202,7 @@ const handler = async (req, res) => {
       const idParam = req.query.id;
       const id = idParam ? parseInt(idParam) : null;
 
-      const pageSizeParam = req.query.pageSize;
+      const pageSizeParam = req.query.pageSize ;
       const currentPageParam = req.query.currentPage;
       const hasPagination = pageSizeParam !== undefined && currentPageParam !== undefined;
 

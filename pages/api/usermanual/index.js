@@ -150,7 +150,7 @@ const handler = async (req, res) => {
     try {
       const id = req.query.id ? parseInt(req.query.id) : null;
       const currentPage = parseInt(req.query.currentPage || "1");
-      const pageSize = parseInt(req.query.pageSize || "10");
+      const pageSize = parseInt(req.query.pageSize || "1000");
 
       let manualQuery = db("UserManuals").orderBy("id", "desc");
 

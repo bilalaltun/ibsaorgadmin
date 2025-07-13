@@ -196,7 +196,7 @@ const handler = async (req, res) => {
       const idParam = req.query.id;
       const id = idParam ? parseInt(idParam) : null;
 
-      const pageSize = parseInt(req.query.pageSize) || 10;
+      const pageSize = parseInt(req.query.pageSize) || 1000;
       const currentPage = parseInt(req.query.currentPage) || 1;
       const offset = (currentPage - 1) * pageSize;
 

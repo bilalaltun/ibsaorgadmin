@@ -174,7 +174,7 @@ const handler = async (req, res) => {
   if (req.method === "GET") {
     try {
       const currentPage = parseInt(req.query.currentPage || "1");
-      const pageSize = parseInt(req.query.pageSize || "10");
+      const pageSize = parseInt(req.query.pageSize || "1000");
 
       let usersQuery = db("Users").orderBy("date", "desc");
 
