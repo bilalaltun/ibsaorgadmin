@@ -19,6 +19,7 @@ import {
   FaDownload,
   FaClipboardList, // Used for "Commitee & Referees"
   FaImage, // Used for "Banner Image"
+  FaExternalLinkAlt, // Used for "Site Links"
 } from "react-icons/fa";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
@@ -134,6 +135,9 @@ export default function Sidebar({ toggleSidebar }) {
               </li>
               <li onClick={() => handleNavigate("/slider")}>
                 <FaImages /> <span>Slider</span>
+              </li>
+              <li onClick={() => handleNavigate("/site-links")}>
+                <FaExternalLinkAlt /> <span>Site Links</span>
               </li>
             </>
           ) : (
