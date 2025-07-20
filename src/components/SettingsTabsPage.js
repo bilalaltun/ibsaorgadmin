@@ -9,9 +9,9 @@ import styles from "./SettingsTabs.module.css";
 import Cookies from "js-cookie";
 
 const tabs = [
-  { key: "general", label: "GENEL" },
-  { key: "contact", label: "İLETİŞİM BİLGİLERİ" },
-  { key: "theme", label: "TEMA AYARLARI" },
+  { key: "general", label: "GENERAL" },
+  { key: "contact", label: "CONTACT INFORMATION" },
+  { key: "theme", label: "THEME SETTINGS" },
 ];
 
 export default function SettingsTabsPage() {
@@ -68,7 +68,7 @@ export default function SettingsTabsPage() {
         },
       });
     } catch {
-      Swal.fire("Hata", "Veriler alınamadı", "error");
+      Swal.fire("Error", "Data could not be retrieved", "error");
     }
   };
 
@@ -88,7 +88,7 @@ export default function SettingsTabsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    Swal.fire({ title: "Kaydediliyor...", didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: "Saving...", didOpen: () => Swal.showLoading() });
 
     try {
       const token = Cookies.get("token");
@@ -116,17 +116,17 @@ export default function SettingsTabsPage() {
 
       if (!res.ok) throw new Error();
 
-      Swal.fire("Başarılı", "Ayarlar kaydedildi", "success");
+      Swal.fire("Success", "Settings saved successfully", "success");
       fetchSettings();
     } catch {
-      Swal.fire("Hata", "Ayarlar kaydedilemedi", "error");
+      Swal.fire("Error", "Settings could not be saved", "error");
     }
   };
 
   return (
     <Layout>
       <div className={styles.container}>
-        <h2 className={styles.title}>Site Ayarları</h2>
+        <h2 className={styles.title}>Site Settings</h2>
 
         <div className={styles.tabMenu}>
           {tabs.map((tab) => (
@@ -148,7 +148,7 @@ export default function SettingsTabsPage() {
         >
           {activeTab === "general" && (
             <>
-              <label>Site Adresi</label>
+              <label>Site Address</label>
               <input
                 value={form.general.site_address}
                 onChange={(e) =>
@@ -156,7 +156,7 @@ export default function SettingsTabsPage() {
                 }
               />
 
-              <label>Site Kodu</label>
+              <label>Site Code</label>
               <input
                 value={form.general.site_code}
                 onChange={(e) =>
@@ -172,7 +172,7 @@ export default function SettingsTabsPage() {
                 }
               />
 
-              <label>Whatsapp Numarası</label>
+              <label>WhatsApp Number</label>
               <input
                 value={form.general.whatsapp_number}
                 onChange={(e) =>
@@ -184,7 +184,7 @@ export default function SettingsTabsPage() {
 
           {activeTab === "contact" && (
             <>
-              <label>Telefon</label>
+              <label>Phone</label>
               <input
                 value={form.contact.phone}
                 onChange={(e) =>
@@ -192,7 +192,7 @@ export default function SettingsTabsPage() {
                 }
               />
 
-              <label>E-posta</label>
+              <label>Email</label>
               <input
                 value={form.contact.email}
                 onChange={(e) =>
@@ -209,7 +209,7 @@ export default function SettingsTabsPage() {
                 type="image"
                 value={form.theme.logo_img}
                 onChange={(url) => handleChange("theme", "logo_img", url)}
-                label="Logo Yükle"
+                label="Upload Logo"
                 accept="image/*"
               />
 
@@ -256,7 +256,7 @@ export default function SettingsTabsPage() {
           )}
 
           <button type="submit" className={styles.saveButton}>
-            TÜM AYARLARI KAYDET
+            SAVE ALL SETTINGS
           </button>
         </form>
       </div>
