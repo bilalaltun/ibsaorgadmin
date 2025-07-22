@@ -38,13 +38,20 @@ export default async function handler(req, res) {
       const fetch = (...args) =>
         import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
+      const username = "aifuser";
+      const password = "bjtrdX}o_yd_=uqxL-[ukktvFKFo";
+      const basicAuth = Buffer.from(`${username}:${password}`).toString(
+        "base64"
+      );
+
       const response = await fetch(
-        "https://aifdijital.com/api/File/ibsa/upload",
+        "https://fileservice.aifdigitalsolutions.com/api/File/ibsa/upload-full-path",
         {
           method: "POST",
           headers: {
             ...form.getHeaders(),
             accept: "application/json",
+            Authorization: `Basic ${basicAuth}`,
           },
           body: form,
         }
@@ -52,7 +59,8 @@ export default async function handler(req, res) {
 
       if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`Upload failed: ${errText}`);
+        console.log(response);
+        throw new Error(`Upload failed: ${errText} ${response}`);
       }
 
       const responseData = await response.json();
@@ -62,7 +70,7 @@ export default async function handler(req, res) {
         throw new Error("Upload succeeded but path not returned");
       }
 
-      uploadedUrls.push(`https://aifdijital.com/${uploadedFile.pathOrContainerName}`);
+      uploadedUrls.push(`${uploadedFile.pathOrContainerName}`);
     }
 
     return res.status(200).json({ urls: uploadedUrls });
