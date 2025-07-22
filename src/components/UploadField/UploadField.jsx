@@ -19,13 +19,17 @@ export default function UploadField({
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [error, setError] = useState("");
+  const [fileName, setFileName] = useState("");
 
   const uploadFile = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
 
+    // Determine endpoint based on type
+    const endpoint = type === "file" ? "/api/upload-file" : "/api/upload";
+
     try {
-      const res = await fetch("/api/upload", {
+      const res = await fetch(endpoint, {
         method: "POST",
         body: formData,
       });
@@ -42,12 +46,14 @@ export default function UploadField({
   };
   const handleDelete = () => {
     setPreviewUrl(null);
+    setFileName("");
     onChange?.(null);
   };
 
   const handleFileChange = async (e) => {
     let file = e.target.files[0];
     if (!file) return;
+    setFileName(file.name); // Store the original file name
 
     if (type === "image" && (requiredWidth || requiredHeight)) {
       const imageURL = URL.createObjectURL(file);
@@ -90,12 +96,8 @@ export default function UploadField({
           useWebWorker: true,
         });
 
-        // 🧠 Dosya adını koru (ya da fallback)
-        const originalName =
-          file.name && file.name.includes(".")
-            ? file.name
-            : `upload.${file.type?.split("/")[1] || "jpg"}`;
-
+        // Dosya adını orijinal olarak KORU
+        const originalName = file.name;
         const renamedFile = new File([compressedBlob], originalName, {
           type: compressedBlob.type || file.type || "image/jpeg",
         });
@@ -147,10 +149,11 @@ export default function UploadField({
       );
     }
 
+    // For type 'file', show the original file name if available
     return (
       <div className={styles.previewItem}>
         <span className={styles.fileIcon}>📄</span>
-        <p>{src.split("/").pop()}</p>
+        <p>{fileName || src.split("/").pop()}</p>
         {deleteButton}
       </div>
     );

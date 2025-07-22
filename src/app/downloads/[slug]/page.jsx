@@ -127,14 +127,16 @@ export default function EditPage() {
 
   const handleAddFile = (catIndex) => {
     setForm((prev) => {
-      const newTabs = [...prev.CategoryTab];
-      newTabs[catIndex].Files.push({ title: "", fileurl: "" });
+      const newTabs = prev.CategoryTab.map((cat, idx) =>
+        idx === catIndex
+          ? { ...cat, Files: [...cat.Files, { title: "", fileurl: "" }] }
+          : cat
+      );
       return { ...prev, CategoryTab: newTabs };
     });
   };
 
   const handleDeleteFile = (catIndex, fileIndex) => {
-    // Check if at least one file should remain
     if (form.CategoryTab[catIndex].Files.length <= 1) {
       Swal.fire(
         "Warning",
