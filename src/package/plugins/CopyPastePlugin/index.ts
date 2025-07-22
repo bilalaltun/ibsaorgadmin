@@ -67,7 +67,9 @@ export default function CopyPastePlugin(): null {
                       type: file.type,
                       lastModified: Date.now(),
                     });
-                  } catch (err) {}
+                  } catch (err) {
+                    console.error("Image compression error:", err);
+                  }
                   const uploadedUrl = await uploadFile(finalFile);
                   if (uploadedUrl) {
                     editor.dispatchCommand(INSERT_IMAGE_COMMAND, {

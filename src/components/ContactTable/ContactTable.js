@@ -3,9 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Swal from "sweetalert2";
-import { FaPen, FaTrash } from "react-icons/fa";
+import { FaPen } from "react-icons/fa";
 import styles from "./styles.module.css";
-import Cookies from "js-cookie";
 
 export default function LocationTable() {
   const [locations, setLocations] = useState([]);
@@ -41,69 +40,69 @@ export default function LocationTable() {
 
   const totalPages = Math.ceil(filtered.length / pageSize);
 
-  const handleDelete = async (id) => {
-    const result = await Swal.fire({
-      title: "Are you sure you want to delete this?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it",
-      cancelButtonText: "Cancel",
-    });
+  // const handleDelete = async (id) => {
+  //   const result = await Swal.fire({
+  //     title: "Are you sure you want to delete this?",
+  //     icon: "warning",
+  //     showCancelButton: true,
+  //     confirmButtonText: "Yes, delete it",
+  //     cancelButtonText: "Cancel",
+  //   });
 
-    if (!result.isConfirmed) return;
+  //   if (!result.isConfirmed) return;
 
-    try {
-      const token = Cookies.get("token");
-      const res = await fetch(`/api/contacts?id=${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) throw new Error();
-      setLocations((prev) => prev.filter((loc) => loc.id !== id));
-      Swal.fire("Deleted", "Location has been deleted", "success");
-    } catch {
-      Swal.fire("Error", "Failed to delete location", "error");
-    }
-  };
+  //   try {
+  //     const token = Cookies.get("token");
+  //     const res = await fetch(`/api/contacts?id=${id}`, {
+  //       method: "DELETE",
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
+  //     if (!res.ok) throw new Error();
+  //     setLocations((prev) => prev.filter((loc) => loc.id !== id));
+  //     Swal.fire("Deleted", "Location has been deleted", "success");
+  //   } catch {
+  //     Swal.fire("Error", "Failed to delete location", "error");
+  //   }
+  // };
 
-  const handleToggle = async (loc) => {
-    const updated = {
-      id: loc.id,
-      gmail: loc.gmail,
-      isactive: !loc.isactive,
-      title: loc.title,
-      address: loc.address,
-      phones: loc.phones || [],
-    };
+  // const handleToggle = async (loc) => {
+  //   const updated = {
+  //     id: loc.id,
+  //     gmail: loc.gmail,
+  //     isactive: !loc.isactive,
+  //     title: loc.title,
+  //     address: loc.address,
+  //     phones: loc.phones || [],
+  //   };
 
-    Swal.fire({
-      title: "Updating...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
+  //   Swal.fire({
+  //     title: "Updating...",
+  //     allowOutsideClick: false,
+  //     didOpen: () => Swal.showLoading(),
+  //   });
 
-    try {
-      const token = Cookies.get("token");
-      const res = await fetch(`/api/contacts?id=${loc.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(updated),
-      });
+  //   try {
+  //     const token = Cookies.get("token");
+  //     const res = await fetch(`/api/contacts?id=${loc.id}`, {
+  //       method: "PUT",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //       body: JSON.stringify(updated),
+  //     });
 
-      if (!res.ok) throw new Error();
+  //     if (!res.ok) throw new Error();
 
-      await fetchLocations();
-      Swal.fire("Success", "Status updated successfully.", "success");
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "Failed to update status.", "error");
-    }
-  };
+  //     await fetchLocations();
+  //     Swal.fire("Success", "Status updated successfully.", "success");
+  //   } catch (err) {
+  //     console.error(err);
+  //     Swal.fire("Error", "Failed to update status.", "error");
+  //   }
+  // };
 
   return (
     <div className={styles.tableWrapper}>

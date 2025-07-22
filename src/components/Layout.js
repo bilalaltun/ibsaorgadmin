@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
-import LiveChatBox from "./LiveChatBox";
 
 
 export default function Layout({ children }) {

@@ -80,29 +80,29 @@ export default function CountriesTable() {
     }
   };
 
-  const handleToggleStatus = async (id, currentStatus, data) => {
-    try {
-      const token = Cookies.get("token");
-      const res = await fetch(`/api/countries?id=${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ ...data, isactive: !currentStatus }),
-      });
+  // const handleToggleStatus = async (id, currentStatus, data) => {
+  //   try {
+  //     const token = Cookies.get("token");
+  //     const res = await fetch(`/api/countries?id=${id}`, {
+  //       method: "PUT",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //       body: JSON.stringify({ ...data, isactive: !currentStatus }),
+  //     });
 
-      if (!res.ok) {
-        const { error } = await res.json();
-        throw new Error(error || "Failed to update status");
-      }
+  //     if (!res.ok) {
+  //       const { error } = await res.json();
+  //       throw new Error(error || "Failed to update status");
+  //     }
 
-      fetchCountries();
-    } catch (err) {
-      console.error("Status update failed:", err);
-      Swal.fire("Error", err.message || "Status update failed", "error");
-    }
-  };
+  //     fetchCountries();
+  //   } catch (err) {
+  //     console.error("Status update failed:", err);
+  //     Swal.fire("Error", err.message || "Status update failed", "error");
+  //   }
+  // };
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();

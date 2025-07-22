@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Swal from "sweetalert2";
-import { FaPen, FaTrash, FaExternalLinkAlt } from "react-icons/fa";
+import { FaPen, FaTrash } from "react-icons/fa";
 import styles from "./styles.module.css";
 import Cookies from "js-cookie";
 
