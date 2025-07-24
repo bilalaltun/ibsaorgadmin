@@ -215,70 +215,63 @@ const handler = async (req, res) => {
       });
     } catch (err) {
       console.error("[GET /teammembers]", err);
-      return res.status(500).json({ error: "GET failed", details: err.message });
+      return res
+        .status(500)
+        .json({ error: "GET failed", details: err.message });
     }
   }
 
-// POST
-else if (req.method === "POST") {
-  const {
-    name,
-    position,
-    email,
-    photo_url = null,
-    flag_url = null,
-    isactive = true,
-  } = req.body;
-
-  try {
-    await db("TeamMembers").insert({
+  // POST
+  else if (req.method === "POST") {
+    const {
       name,
       position,
       email,
-      photo_url,
-      flag_url,
-      isactive,
-      created_at: new Date(),
-    });
+      photo_url = null,
+      flag_url = null,
+      isactive = true,
+    } = req.body;
 
-    return res.status(201).json({ success: true });
-  } catch (err) {
-    console.error("[POST /team-members]", err);
-    return res.status(500).json({
-      error: "POST failed",
-      details: err.message,
-    });
-  }
-}
+    try {
+      await db("TeamMembers").insert({
+        name,
+        position,
+        email,
+        photo_url,
+        flag_url,
+        isactive,
+        created_at: new Date(),
+      });
 
-
-// PUT
-else if (req.method === "PUT") {
-  const { id } = req.query;
-
-  if (!id) {
-    return res.status(400).json({ error: "ID gerekli" });
-  }
-
-  const {
-    name,
-    position,
-    email,
-    photo_url = null,
-    flag_url = null,
-    isactive = true,
-  } = req.body;
-
-  if (!name || !position || !email) {
-    return res.status(400).json({
-      error: "name, position ve email alanları zorunludur.",
-    });
+      return res.status(201).json({ success: true });
+    } catch (err) {
+      console.error("[POST /team-members]", err);
+      return res.status(500).json({
+        error: "POST failed",
+        details: err.message,
+      });
+    }
   }
 
-  try {
-    await db("TeamMembers")
-      .where({ id })
-      .update({
+  // PUT
+  else if (req.method === "PUT") {
+    const { id } = req.query;
+
+    if (!id) {
+      return res.status(400).json({ error: "ID gerekli" });
+    }
+
+    const {
+      name,
+      position,
+      email,
+      photo_url = null,
+      flag_url = null,
+      isactive = true,
+    } = req.body;
+
+    try {
+      await db("TeamMembers").where({ id }).update({
         name,
         position,
         email,
@@ -287,15 +280,14 @@ else if (req.method === "PUT") {
         isactive,
       });
 
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error("[PUT /team-members]", err);
-    return res
-      .status(500)
-      .json({ error: "PUT failed", details: err.message });
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error("[PUT /team-members]", err);
+      return res
+        .status(500)
+        .json({ error: "PUT failed", details: err.message });
+    }
   }
-}
-
 
   // DELETE
   else if (req.method === "DELETE") {
@@ -317,7 +309,3 @@ else if (req.method === "PUT") {
 };
 
 export default withCors(handler);
-
-
-
-
