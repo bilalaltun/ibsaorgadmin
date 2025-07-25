@@ -124,6 +124,9 @@ export default function Sidebar({ toggleSidebar }) {
               <li onClick={() => handleNavigate("/downloads")}>
                 <FaDownload /> <span>Downloads</span>
               </li>
+              <li onClick={() => handleNavigate("/media-accreditation")}>
+                <FaClipboardList /> <span>Media Accreditation</span>
+              </li>
               <li onClick={() => handleNavigate("/members")}>
                 <FaClipboardList /> <span>Commitee & Referees</span>
               </li>
