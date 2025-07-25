@@ -38,6 +38,15 @@ const uploadFile = async (file: File): Promise<string | null> => {
   }
 };
 
+// Helper: Resolve relative URLs to absolute using a base URL
+function resolveUrl(src: string, baseUrl: string): string {
+  try {
+    return new URL(src, baseUrl).href;
+  } catch {
+    return src;
+  }
+}
+
 // Yeni: Props tipi
 interface CopyPastePluginProps {
   onImageUploaded?: (url: string, file: File) => void;
@@ -67,6 +76,25 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
     });
   };
 
+  // D: Robustly update all image nodes with the placeholder src
+  function updateImageSrcInEditorAll(placeholder: string, newSrc: string) {
+    editor.update(() => {
+      const root = $getRoot();
+      function updateImages(node: any) {
+        if (node.getType && node.getType() === 'image') {
+          if (node.__src === placeholder) {
+            const writable = node.getWritable();
+            writable.__src = newSrc;
+          }
+        }
+        if (typeof node.getChildren === 'function') {
+          node.getChildren().forEach(updateImages);
+        }
+      }
+      root.getChildren().forEach(updateImages);
+    });
+  }
+
   useEffect(() => {
     return editor.registerCommand(
       PASTE_COMMAND,
@@ -89,17 +117,37 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
               event.preventDefault(); // Default paste'i tamamen engelle
               item.getAsString((rawHtml) => {
                 htmlString = rawHtml;
+                // Try to get base URL from clipboard (if available)
+                let baseUrl = '';
+                try {
+                  const doc = new DOMParser().parseFromString(rawHtml, 'text/html');
+                  const baseTag = doc.querySelector('base');
+                  if (baseTag && baseTag.href) baseUrl = baseTag.href;
+                  // Fallback: try to extract from meta or guess from first image
+                  if (!baseUrl) {
+                    const firstImg = doc.querySelector('img');
+                    if (firstImg && firstImg.src) {
+                      const url = new URL(firstImg.src, window.location.href);
+                      baseUrl = url.origin;
+                    }
+                  }
+                } catch (e) { baseUrl = window.location.origin; }
+                if (!baseUrl) baseUrl = window.location.origin;
+
                 // <img src="..."> tag'lerini bul ve placeholder ile değiştir
                 const imgRegex = /<img([^>]+)src=["']([^"']+)["']([^>]*)>/gi;
                 let match;
                 let newHtml = htmlString;
                 imgPlaceholders = [];
                 while ((match = imgRegex.exec(htmlString)) !== null) {
-                  const originalSrc = match[2];
+                  let originalSrc = match[2];
+                  // D: Resolve relative URLs
+                  originalSrc = resolveUrl(originalSrc, baseUrl);
                   const placeholder = `__uploading__${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
                   imgPlaceholders.push({ placeholder, originalSrc });
                   // Replace only this occurrence
                   newHtml = newHtml.replace(match[0], `<img${match[1]}src=\"${placeholder}\"${match[3]}>`);
+                  console.log('[CopyPastePlugin] Detected pasted image in HTML:', originalSrc, '-> placeholder:', placeholder);
                 }
                 // Basit bir HTML parser: <p>, <br>, <img> ve text
                 editor.update(() => {
@@ -161,7 +209,7 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
                 imgPlaceholders.forEach(({ placeholder, originalSrc }) => {
                   (async () => {
                     try {
-                      let file: File | null = null;
+                      let file = null;
                       if (originalSrc.startsWith("data:image/")) {
                         // Data URL'den File oluştur
                         const arr = originalSrc.split(",");
@@ -175,6 +223,7 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
                         }
                         const ext = mime.split("/")[1] || "png";
                         file = new File([u8arr], `clipboard-img-${Date.now()}.${ext}`, { type: mime });
+                        console.log('[CopyPastePlugin] Created File from data URL:', file);
                       } else if (originalSrc.startsWith("http://") || originalSrc.startsWith("https://")) {
                         // Proxy endpoint üzerinden fetch
                         const extMatch = originalSrc.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
@@ -185,6 +234,7 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
                         const blob = await response.blob();
                         const mime = blob.type || "image/png";
                         file = new File([blob], `clipboard-img-url-${Date.now()}.${ext}`, { type: mime });
+                        console.log('[CopyPastePlugin] Created File from remote image:', file);
                       }
                       if (file) {
                         let finalFile = file;
@@ -198,17 +248,34 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
                             type: file.type,
                             lastModified: Date.now(),
                           });
+                          console.log('[CopyPastePlugin] Compressed image:', finalFile);
                         } catch (err) {
-                          console.error("Image compression error:", err);
+                          console.error("[CopyPastePlugin] Image compression error:", err);
                         }
+                        console.log('[CopyPastePlugin] Uploading image...');
                         const uploadedUrl = await uploadFile(finalFile);
-                        if (uploadedUrl) {
-                          updateImageSrcInEditor(placeholder, uploadedUrl);
-                          if (onImageUploaded) onImageUploaded(uploadedUrl, finalFile);
+                        // D: Always use full URL
+                        let fullUrl: any = uploadedUrl;
+                        if (uploadedUrl && typeof uploadedUrl === 'object' && (uploadedUrl as any).url) {
+                          // Defensive: handle if uploadFile ever returns an object
+                          fullUrl = (uploadedUrl as any).url;
+                        }
+                        if (fullUrl && typeof fullUrl === 'string' && !fullUrl.startsWith('http')) {
+                          // You may want to change this to your actual domain
+                          fullUrl = `${window.location.origin}${fullUrl.startsWith('/') ? '' : '/'}${fullUrl}`;
+                        }
+                        if (typeof fullUrl !== 'string') {
+                          console.error('[CopyPastePlugin] fullUrl is not a string:', fullUrl);
+                        } else if (fullUrl) {
+                          console.log('[CopyPastePlugin] Upload success! URL:', fullUrl);
+                          updateImageSrcInEditorAll(placeholder, fullUrl);
+                          if (onImageUploaded) onImageUploaded(fullUrl, finalFile);
+                        } else {
+                          console.error('[CopyPastePlugin] Upload failed, no URL returned');
                         }
                       }
                     } catch (err) {
-                      console.error("Image upload error:", err);
+                      console.error("[CopyPastePlugin] Image upload error:", err);
                     }
                   })();
                 });
@@ -251,17 +318,22 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
                       type: file.type,
                       lastModified: Date.now(),
                     });
+                    console.log('[CopyPastePlugin] Compressed pasted file:', finalFile);
                   } catch (err) {
-                    console.error("Image compression error:", err);
+                    console.error("[CopyPastePlugin] Image compression error:", err);
                   }
+                  console.log('[CopyPastePlugin] Uploading pasted file...');
                   const uploadedUrl = await uploadFile(finalFile);
                   if (uploadedUrl && onImageUploaded) {
+                    console.log('[CopyPastePlugin] Upload success! URL:', uploadedUrl);
                     onImageUploaded(uploadedUrl, finalFile);
+                  } else if (!uploadedUrl) {
+                    console.error('[CopyPastePlugin] Upload failed, no URL returned');
                   }
                 }
               }
             } catch (error) {
-              console.error("Error processing files:", error);
+              console.error("[CopyPastePlugin] Error processing files:", error);
             }
           })();
         }
