@@ -47,6 +47,14 @@ function resolveUrl(src: string, baseUrl: string): string {
   }
 }
 
+// Helper: Generate a globally unique placeholder for each image
+function generateUniquePlaceholder(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `__uploading__${crypto.randomUUID()}`;
+  }
+  return `__uploading__${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
 // Yeni: Props tipi
 interface CopyPastePluginProps {
   onImageUploaded?: (url: string, file: File) => void;
@@ -83,8 +91,9 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
       function updateImages(node: any) {
         if (node.getType && node.getType() === 'image') {
           if (node.__src === placeholder) {
-            const writable = node.getWritable();
-            writable.__src = newSrc;
+            // Replace the node with a new one to trigger re-render
+            const newNode = $createImageNode({ src: newSrc, altText: node.__altText || '' });
+            node.replace(newNode);
           }
         }
         if (typeof node.getChildren === 'function') {
@@ -138,17 +147,19 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
                 const imgRegex = /<img([^>]+)src=["']([^"']+)["']([^>]*)>/gi;
                 let match;
                 let newHtml = htmlString;
-                imgPlaceholders = [];
+                const localImgPlaceholders: { placeholder: string, originalSrc: string }[] = [];
                 while ((match = imgRegex.exec(htmlString)) !== null) {
                   let originalSrc = match[2];
                   // D: Resolve relative URLs
                   originalSrc = resolveUrl(originalSrc, baseUrl);
-                  const placeholder = `__uploading__${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-                  imgPlaceholders.push({ placeholder, originalSrc });
+                  const placeholder = generateUniquePlaceholder();
+                  localImgPlaceholders.push({ placeholder, originalSrc });
                   // Replace only this occurrence
                   newHtml = newHtml.replace(match[0], `<img${match[1]}src=\"${placeholder}\"${match[3]}>`);
-                  console.log('[CopyPastePlugin] Detected pasted image in HTML:', originalSrc, '-> placeholder:', placeholder);
+                  console.log('[CopyPastePlugin] [PASTE] Detected pasted image in HTML:', originalSrc, '-> placeholder:', placeholder);
                 }
+                // Logging all placeholders for this paste event
+                console.log('[CopyPastePlugin] [PASTE] All placeholders for this event:', localImgPlaceholders.map(p => p.placeholder));
                 // Basit bir HTML parser: <p>, <br>, <img> ve text
                 editor.update(() => {
                   const tempDiv = document.createElement('div');
@@ -173,7 +184,13 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
                         const p = $createParagraphNode();
                         Array.from(el.childNodes).forEach((child: any) => {
                           const node = parseNode(child);
-                          if (node) p.append(node);
+                          if (Array.isArray(node)) {
+                            node.forEach((n: any) => {
+                              if (n && typeof n.getKey === 'function') p.append(n);
+                            });
+                          } else if (node && typeof node.getKey === 'function') {
+                            p.append(node);
+                          }
                         });
                         return p;
                       } else {
@@ -206,7 +223,7 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
                   });
                 });
                 // Her img için upload başlat
-                imgPlaceholders.forEach(({ placeholder, originalSrc }) => {
+                localImgPlaceholders.forEach(({ placeholder, originalSrc }) => {
                   (async () => {
                     try {
                       let file = null;
@@ -270,6 +287,7 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
                           console.log('[CopyPastePlugin] Upload success! URL:', fullUrl);
                           updateImageSrcInEditorAll(placeholder, fullUrl);
                           if (onImageUploaded) onImageUploaded(fullUrl, finalFile);
+                          console.log('[CopyPastePlugin] [REPLACE] Replacing placeholder:', placeholder, 'with URL:', fullUrl);
                         } else {
                           console.error('[CopyPastePlugin] Upload failed, no URL returned');
                         }
