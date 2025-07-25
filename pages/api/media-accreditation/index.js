@@ -59,7 +59,7 @@ const handler = async (req, res) => {
     }
     // List all media accreditations
     try {
-      const items = await db("media_accreditations").select();
+      const items = await db("media_accreditations").select().orderBy("created_at", "desc");
       return res.status(200).json(items);
     } catch (err) {
       console.error("GET error:", err);
