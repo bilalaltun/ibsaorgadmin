@@ -88,18 +88,19 @@ export default function UploadField({
     if (localUrl) setPreviewUrl(localUrl);
     else setPreviewUrl(URL.createObjectURL(file));
 
-    if (type === "image") {
+    if (type === "image" && file.type !== "image/svg+xml") {
       try {
         const compressedBlob = await imageCompression(file, {
           maxSizeMB: 1,
           maxWidthOrHeight: 6000,
           useWebWorker: true,
         });
-
+        console.log("file.type", file.type);
+        console.log("compressedBlob.type", compressedBlob.type);
         // Dosya adını orijinal olarak KORU
         const originalName = file.name;
         const renamedFile = new File([compressedBlob], originalName, {
-          type: compressedBlob.type || file.type || "image/jpeg",
+          type: file.type || compressedBlob.type || "image/jpeg",
         });
 
         file = renamedFile;

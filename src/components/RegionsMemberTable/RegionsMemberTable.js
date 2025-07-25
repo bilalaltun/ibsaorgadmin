@@ -161,7 +161,7 @@ export default function RegionMembersTable() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <Link href="/region-members/create">
+          <Link href="/regions-members/create">
             <button className={styles.btnAdd}>ADD NEW</button>
           </Link>
         </div>

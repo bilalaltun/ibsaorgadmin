@@ -101,7 +101,7 @@ export default function EditRegionMemberPage() {
       if (!res.ok) throw new Error("Server error");
 
       Swal.fire("Success", "Region member updated.", "success").then(() =>
-        router.push("/region-members")
+        router.push("/regions-members")
       );
     } catch (err) {
       console.error(err);

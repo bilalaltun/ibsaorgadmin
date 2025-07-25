@@ -57,6 +57,7 @@ export default async function handler(req, res) {
     }
 
     const responseData = await response.json();
+    console.log("responseData", responseData);
     const uploadedFile = responseData?.[0];
 
     if (!uploadedFile || !uploadedFile.pathOrContainerName) {
