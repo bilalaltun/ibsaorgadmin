@@ -103,8 +103,6 @@ export default function UploadField({
         });
 
         file = renamedFile;
-
-        console.log("✅ Gerçek filename:", file.name, file.type);
       } catch (err) {
         console.error("Compress error:", err);
         setError("⚠ Görsel sıkıştırılamadı.");

@@ -173,7 +173,6 @@ export default function ProductContentEditPage() {
       }));
     });
 
-    console.log(payload)
 
     Swal.fire({
       title: "Kaydediliyor...",

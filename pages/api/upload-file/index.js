@@ -26,12 +26,10 @@ export default async function handler(req, res) {
 
     const form = new FormData();
     const fileStream = fs.createReadStream(file.filepath);
-    console.log(fileStream);
     form.append("files", fileStream, {
       filename: file.originalFilename || "upload.jpg",
       contentType: file.mimetype || "application/octet-stream",
     });
-    console.log(form);
     const fetch = (...args) =>
       import("node-fetch").then(({ default: fetch }) => fetch(...args));
 
@@ -54,7 +52,6 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.log(response);
       throw new Error(`Upload failed: ${errText} ${response}`);
     }
 
