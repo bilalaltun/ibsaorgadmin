@@ -245,20 +245,6 @@ const handler = async (req, res) => {
           ? [parseInt(category_id)]
           : [];
 
-      if (req.user?.role !== "superadmin") {
-        const checks = await Promise.all(
-          categoryIds.map((catId) =>
-            checkPermission(req.user?.id, catId, "read")
-          )
-        );
-        const allAllowed = checks.every(Boolean);
-        if (!allAllowed) {
-          return res.status(403).json({
-            error: "Bazı kategoriler için etkinlik okuma yetkiniz yok.",
-          });
-        }
-      }
-
       const pageInt = Math.max(parseInt(pageSize), 1);
       const currentPageInt = Math.max(parseInt(currentPage), 1);
       const offset = (currentPageInt - 1) * pageInt;
