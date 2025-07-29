@@ -57,7 +57,6 @@ export default async function handler(req, res) {
     }
 
     const responseData = await response.json();
-    console.log("responseData", responseData);
     const uploadedFile = responseData?.[0];
 
     if (!uploadedFile || !uploadedFile.pathOrContainerName) {
@@ -70,7 +69,6 @@ export default async function handler(req, res) {
       url: `${uploadedFile.pathOrContainerName}`,
     });
   } catch (error) {
-    console.error("🔥 Upload Error:", error?.message || error);
     return res.status(500).json({ error: error?.message || "Upload failed" });
   }
 }
