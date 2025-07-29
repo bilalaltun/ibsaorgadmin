@@ -98,31 +98,8 @@ export default function EditEventPage() {
     setForm((prev) => ({ ...prev, downloads: updated }));
   };
 
-  const isFormValid = () => {
-    return (
-      form.title &&
-      form.start_date &&
-      form.end_date &&
-      form.location &&
-      form.sanction_type &&
-      form.contact_email &&
-      form.image_url &&
-      form.description &&
-      form.downloads.length > 0
-    );
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!isFormValid()) {
-      Swal.fire(
-        "Missing Information",
-        "All required fields must be filled.",
-        "warning"
-      );
-      return;
-    }
 
     Swal.fire({
       title: "Updating...",
@@ -285,9 +262,9 @@ export default function EditEventPage() {
                 <UploadField
                   ref={fileRef}
                   type="file"
-                  accept="application/pdf"
+                  accept="*"
                   value={file.url}
-                  label="Upload PDF"
+                  label="Upload File"
                   onChange={(url) => handleDownloadChange(index, "url", url)}
                 />
               </div>

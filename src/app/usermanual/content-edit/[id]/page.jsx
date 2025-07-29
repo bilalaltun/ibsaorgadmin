@@ -207,7 +207,7 @@ export default function EditUserManualPage() {
                 <label>Dosya ({activeLang.toUpperCase()})</label>
                 <UploadField
                   type="file"
-                  accept="application/pdf"
+                  accept="*"
                   value={form.translations[activeLang]?.file || ""}
                   label="PDF Yükle"
                   onChange={(url) =>

@@ -13,11 +13,10 @@ export default function EventTable() {
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortField, setSortField] = useState("title");
-  const [sortAsc, setSortAsc] = useState(true);
+  const [sortField, setSortField] = useState(null);
+  const [sortAsc, setSortAsc] = useState(false);
 
   const fetchEvents = async () => {
-    
     const categories = JSON.parse(Cookies.get("user"))?.category_ids;
 
     try {

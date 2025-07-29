@@ -72,12 +72,7 @@ export default function ContactEditPage() {
   };
 
   const isFormValid = () => {
-    return (
-      form.gmail.trim() &&
-      form.title.trim() &&
-      form.address.trim() &&
-      form.phones.every((p) => p.phone_number.trim())
-    );
+    return form.gmail.trim() && form.title.trim() && form.address.trim();
   };
 
   const handleSubmit = async (e) => {

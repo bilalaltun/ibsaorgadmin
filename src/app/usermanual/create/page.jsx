@@ -169,7 +169,7 @@ export default function CreateUserManualPage() {
                   ref={(el) => (fileRefs.current[activeLang] = el)}
                   key={activeLang}
                   type="file"
-                  accept="application/pdf"
+                  accept="*"
                   value={form.files[activeLang] || ""}
                   label={`${activeLang.toUpperCase()} PDF Yükle`}
                   onChange={(url) => handleLangChange("files", activeLang, url)}

@@ -223,7 +223,7 @@ export default function CreateEventPage() {
                 <UploadField
                   ref={fileRef}
                   type="file"
-                  accept="application/pdf"
+                  accept="*"
                   value={file.url}
                   label="Upload PDF"
                   onChange={(url) => handleDownloadChange(index, "url", url)}

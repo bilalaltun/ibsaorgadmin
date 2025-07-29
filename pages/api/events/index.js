@@ -264,7 +264,7 @@ const handler = async (req, res) => {
         return res.status(200).json(event);
       }
 
-      let query = db("Events").orderBy("start_date", "asc");
+      let query = db("Events").orderBy("start_date", "desc");
       if (categoryIds.length) {
         query = query.whereIn("Events.category_id", categoryIds);
       }

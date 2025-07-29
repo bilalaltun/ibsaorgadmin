@@ -190,7 +190,7 @@ export default function CreateCatalogPage() {
                 key={activeLang}
                   ref={(el) => (fileRefs.current[activeLang] = el)}
                   type="file"
-                  accept="application/pdf"
+                  accept="*"
                   value={currentFile}
                   label={`${activeLang.toUpperCase()} PDF Yükle`}
                   onChange={(url) => handleFileChange(activeLang, url)}

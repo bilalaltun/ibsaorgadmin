@@ -230,7 +230,13 @@ const handler = async (req, res) => {
   // GET /api/blogs
   if (req.method === "GET") {
     try {
-      let { id, link, category_id, pageSize = 1000, currentPage = 1 } = req.query;
+      let {
+        id,
+        link,
+        category_id,
+        pageSize = 1000,
+        currentPage = 1,
+      } = req.query;
 
       // category_id'yi normalize et (tekil veya dizi olabilir)
       const categoryIds = Array.isArray(category_id)
@@ -285,15 +291,14 @@ const handler = async (req, res) => {
 
       // Çoklu blog listeleme (sayfalama + filtre)
       let query = db("Blogs").orderBy("date", "desc");
-
       if (categoryIds.length) {
         query = query.whereIn("category_id", categoryIds);
       }
 
       // MSSQL uyumlu toplam sorgusu (orderBy YOK!)
-      const countQuery = db("Blogs");
+      let countQuery = db("Blogs");
       if (categoryIds.length) {
-        countQuery.whereIn("category_id", categoryIds);
+        countQuery = countQuery.whereIn("category_id", categoryIds);
       }
       const totalData = await countQuery.count("* as count").first();
 

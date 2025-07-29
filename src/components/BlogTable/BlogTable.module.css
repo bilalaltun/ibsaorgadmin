@@ -92,6 +92,51 @@ input:checked + .slider::before {
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
+.searchInputContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchInputContainer input {
+  padding-right: 2.5rem;
+  min-width: 200px;
+}
+
+.clearSearchBtn,
+.searchBtn {
+  position: absolute;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clearSearchBtn {
+  right: 2rem;
+  color: #6b7280;
+}
+
+.clearSearchBtn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.searchBtn {
+  color: #6b7280;
+}
+
+.searchBtn:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
 .resultCount {
   font-size: 0.9rem;
   color: #555;
@@ -99,6 +144,40 @@ input:checked + .slider::before {
   padding: 0.3rem 0.6rem;
   border-radius: 6px;
   font-weight: 500;
+}
+
+.searchStatus {
+  color: #2563eb;
+  font-style: italic;
+}
+
+.noResults {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.noResults p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.clearSearchLink {
+  background: none;
+  border: none;
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.clearSearchLink:hover {
+  background-color: #f3f4f6;
 }
 
 .btnAdd {

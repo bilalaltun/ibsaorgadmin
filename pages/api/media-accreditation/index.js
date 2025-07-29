@@ -1,3 +1,4 @@
+/* eslint-disable */
 import db from "../../../lib/db";
 import { withCors } from "../../../lib/withCors";
 

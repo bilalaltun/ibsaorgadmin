@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import Swal from "sweetalert2";
-import { FaPen, FaTrash, FaSortUp, FaSortDown } from "react-icons/fa";
+import { FaPen, FaTrash, FaSortUp, FaSortDown, FaSearch, FaTimes } from "react-icons/fa";
 import styles from "./BlogTable.module.css";
 import Cookies from "js-cookie";
 
@@ -11,7 +11,7 @@ export default function BlogTable({ blogs, fetchBlogs }) {
   const [search, setSearch] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortField, setSortField] = useState("title");
+  const [sortField, setSortField] = useState(null);
   const [sortAsc, setSortAsc] = useState(true);
 
   const allowedCategories = Cookies.get("user")
@@ -20,17 +20,42 @@ export default function BlogTable({ blogs, fetchBlogs }) {
 
   const filtered = useMemo(() => {
     if (!Array.isArray(blogs)) return [];
-    const query = search.toLowerCase();
-    return allowedCategories.length === 0
-      ? blogs
-      : blogs.filter(
-          (blog) =>
-            allowedCategories.includes(blog.category_id) &&
-            blog.title?.toLowerCase().includes(query)
-        );
+    
+    const query = search.toLowerCase().trim();
+    
+    // If no search query, just filter by allowed categories
+    if (!query) {
+      return allowedCategories.length === 0
+        ? blogs
+        : blogs.filter(blog => allowedCategories.includes(blog.category_id));
+    }
+
+    // Enhanced search across multiple fields
+    return blogs.filter(blog => {
+      // Check category permissions first
+      if (allowedCategories.length > 0 && !allowedCategories.includes(blog.category_id)) {
+        return false;
+      }
+
+      // Search in multiple fields
+      const searchableFields = [
+        blog.title || "",
+        blog.author || "",
+        blog.content || "",
+        blog.details || "",
+        blog.category?.name || "",
+        blog.tags?.join(" ") || ""
+      ];
+
+      return searchableFields.some(field => 
+        field.toLowerCase().includes(query)
+      );
+    });
   }, [search, blogs, allowedCategories]);
 
   const sorted = useMemo(() => {
+    if (!sortField) return filtered;
+    
     return [...filtered].sort((a, b) => {
       const valA = (a[sortField] || "").toLowerCase?.() || "";
       const valB = (b[sortField] || "").toLowerCase?.() || "";
@@ -53,6 +78,16 @@ export default function BlogTable({ blogs, fetchBlogs }) {
       setSortField(field);
       setSortAsc(true);
     }
+  };
+
+  const clearSearch = () => {
+    setSearch("");
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
   };
 
   const handleDelete = async (id) => {
@@ -157,17 +192,32 @@ export default function BlogTable({ blogs, fetchBlogs }) {
           <label>per page</label>
           <span className={styles.resultCount}>
             Found: <b>{filtered.length}</b> records
+            {search && (
+              <span className={styles.searchStatus}>
+                {" "}for "{search}"
+              </span>
+            )}
           </span>
         </div>
 
         <div className={styles.rightControls}>
           <label>Search:</label>
-          <input
-            type="text"
-            placeholder="Search title..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className={styles.searchInputContainer}>
+            <input
+              type="text"
+              placeholder="Search title..."
+              value={search}
+              onChange={handleSearchChange}
+            />
+            {search && (
+              <button className={styles.clearSearchBtn} onClick={clearSearch}>
+                <FaTimes />
+              </button>
+            )}
+            <button className={styles.searchBtn}>
+              <FaSearch />
+            </button>
+          </div>
           <Link href="/blog/create">
             <button className={styles.btnAdd}>ADD NEW</button>
           </Link>
@@ -198,7 +248,19 @@ export default function BlogTable({ blogs, fetchBlogs }) {
           {paginated.length === 0 ? (
             <tr>
               <td colSpan={6} style={{ textAlign: "center", padding: "1rem" }}>
-                No records found.
+                {search ? (
+                  <div className={styles.noResults}>
+                    <p>No blogs found matching "{search}"</p>
+                    <button 
+                      onClick={clearSearch}
+                      className={styles.clearSearchLink}
+                    >
+                      Clear search
+                    </button>
+                  </div>
+                ) : (
+                  "No records found."
+                )}
               </td>
             </tr>
           ) : (

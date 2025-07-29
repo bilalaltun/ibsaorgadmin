@@ -210,7 +210,7 @@ export default function EditCatalogPage() {
                 <label>Dosya ({activeLang.toUpperCase()})</label>
                 <UploadField
                   type="file"
-                  accept="application/pdf"
+                  accept="*"
                   value={form.files[activeLang] || ""}
                   label={`${activeLang.toUpperCase()} PDF Yükle`}
                   onChange={(url) => handleLangFileChange(activeLang, url)}

@@ -205,6 +205,14 @@ export default function BlogContentEditPage() {
             <section className={styles.section}>
               <h2>Blog Information</h2>
 
+              <label>Link</label>
+              <input
+                type="text"
+                value={staticFields.link}
+                onChange={(e) => handleChange("link", e.target.value)}
+                placeholder="Enter blog link"
+              />
+
               <label>Cover Image</label>
               <UploadField
                 type="image"
