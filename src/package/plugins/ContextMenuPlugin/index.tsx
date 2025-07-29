@@ -124,56 +124,129 @@ export default function ContextMenuPlugin(): JSX.Element {
       }),
       new ContextMenuOption(`Paste`, {
         onSelect: (_node) => {
-          navigator.clipboard.read().then(async function (...args) {
-            const data = new DataTransfer();
+          // Try modern clipboard API first
+          if (navigator.clipboard && navigator.clipboard.read) {
+            navigator.clipboard.read().then(async function (items) {
+              try {
+                const data = new DataTransfer();
+                const item = items[0];
 
-            const items = await navigator.clipboard.read();
-            const item = items[0];
+                // Check permission
+                if (navigator.permissions) {
+                  const permission = await navigator.permissions.query({
+                    // @ts-expect-error These types are incorrect.
+                    name: 'clipboard-read',
+                  });
+                  if (permission.state === 'denied') {
+                    alert('Not allowed to paste from clipboard.');
+                    return;
+                  }
+                }
 
-            const permission = await navigator.permissions.query({
-              // @ts-expect-error These types are incorrect.
-              name: 'clipboard-read',
+                for (const type of item.types) {
+                  const dataString = await (await item.getType(type)).text();
+                  data.setData(type, dataString);
+                }
+
+                const event = new ClipboardEvent('paste', {
+                  clipboardData: data,
+                });
+
+                editor.dispatchCommand(PASTE_COMMAND, event);
+              } catch (error) {
+                console.error('Clipboard read error:', error);
+                // Fallback: try to trigger paste using execCommand
+                editor.focus();
+                document.execCommand('paste');
+              }
+            }).catch((error) => {
+              console.error('Clipboard API not available:', error);
+              // Fallback: try to trigger paste using execCommand
+              editor.focus();
+              document.execCommand('paste');
             });
-            if (permission.state === 'denied') {
-              alert('Not allowed to paste from clipboard.');
-              return;
-            }
-
-            for (const type of item.types) {
-              const dataString = await (await item.getType(type)).text();
-              data.setData(type, dataString);
-            }
-
-            const event = new ClipboardEvent('paste', {
-              clipboardData: data,
-            });
-
-            editor.dispatchCommand(PASTE_COMMAND, event);
-          });
+          } else {
+            // Fallback for browsers without clipboard API
+            editor.focus();
+            document.execCommand('paste');
+          }
         },
       }),
       new ContextMenuOption(`Paste as Plain Text`, {
         onSelect: (_node) => {
-          navigator.clipboard.read().then(async function (...args) {
-            const permission = await navigator.permissions.query({
-              // @ts-expect-error These types are incorrect.
-              name: 'clipboard-read',
-            });
+          // Try modern clipboard API first
+          if (navigator.clipboard && navigator.clipboard.readText) {
+            navigator.clipboard.readText().then(async function (text) {
+              try {
+                // Check permission
+                if (navigator.permissions) {
+                  const permission = await navigator.permissions.query({
+                    // @ts-expect-error These types are incorrect.
+                    name: 'clipboard-read',
+                  });
 
-            if (permission.state === 'denied') {
-              alert('Not allowed to paste from clipboard.');
-              return;
+                  if (permission.state === 'denied') {
+                    alert('Not allowed to paste from clipboard.');
+                    return;
+                  }
+                }
+
+                const data = new DataTransfer();
+                data.setData('text/plain', text);
+
+                const event = new ClipboardEvent('paste', {
+                  clipboardData: data,
+                });
+                editor.dispatchCommand(PASTE_COMMAND, event);
+              } catch (error) {
+                console.error('Clipboard read error:', error);
+                // Fallback: insert text directly
+                editor.update(() => {
+                  const selection = $getSelection();
+                  if ($isRangeSelection(selection)) {
+                    selection.insertText(text);
+                  }
+                });
+              }
+            }).catch((error) => {
+              console.error('Clipboard API not available:', error);
+              // Fallback: try to get text from clipboard using execCommand
+              editor.focus();
+              const textarea = document.createElement('textarea');
+              document.body.appendChild(textarea);
+              textarea.focus();
+              document.execCommand('paste');
+              const text = textarea.value;
+              document.body.removeChild(textarea);
+              
+              if (text) {
+                editor.update(() => {
+                  const selection = $getSelection();
+                  if ($isRangeSelection(selection)) {
+                    selection.insertText(text);
+                  }
+                });
+              }
+            });
+          } else {
+            // Fallback for browsers without clipboard API
+            editor.focus();
+            const textarea = document.createElement('textarea');
+            document.body.appendChild(textarea);
+            textarea.focus();
+            document.execCommand('paste');
+            const text = textarea.value;
+            document.body.removeChild(textarea);
+            
+            if (text) {
+              editor.update(() => {
+                const selection = $getSelection();
+                if ($isRangeSelection(selection)) {
+                  selection.insertText(text);
+                }
+              });
             }
-
-            const data = new DataTransfer();
-            const items = await navigator.clipboard.readText();
-            data.setData('text/plain', items);
-
-            const event = new ClipboardEvent('paste', {
-              clipboardData: data,
-            });
-            editor.dispatchCommand(PASTE_COMMAND, event);
-          });
+          }
         },
       }),
       new ContextMenuOption(`Delete Node`, {

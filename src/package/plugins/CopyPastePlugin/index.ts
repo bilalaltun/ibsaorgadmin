@@ -115,114 +115,106 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
         if (!clipboardData) {
           return false;
         }
-        // 1. Eğer HTML varsa, <img src="..."> tag'lerini placeholder ile değiştir
-        let htmlString = '';
-        let imgPlaceholders: { placeholder: string, originalSrc: string }[] = [];
-        let handled = false;
-        if (clipboardData.items && clipboardData.items.length > 0) {
+
+        // Check if there are any image files in the clipboard
+        const hasImageFiles = clipboardData.files && Array.from(clipboardData.files).some(f => f.type.startsWith("image/"));
+        const hasImageItems = clipboardData.items && Array.from(clipboardData.items).some(item => 
+          item.kind === "file" && item.type.startsWith("image/")
+        );
+
+        // Check if there's HTML content with images
+        let hasHtmlWithImages = false;
+        if (clipboardData.items) {
           for (let i = 0; i < clipboardData.items.length; i++) {
             const item = clipboardData.items[i];
             if (item.type === "text/html") {
-              event.preventDefault(); // Default paste'i tamamen engelle
-              item.getAsString((rawHtml) => {
-                htmlString = rawHtml;
-                // Try to get base URL from clipboard (if available)
-                let baseUrl = '';
-                try {
-                  const doc = new DOMParser().parseFromString(rawHtml, 'text/html');
-                  const baseTag = doc.querySelector('base');
-                  if (baseTag && baseTag.href) baseUrl = baseTag.href;
-                  // Fallback: try to extract from meta or guess from first image
-                  if (!baseUrl) {
-                    const firstImg = doc.querySelector('img');
-                    if (firstImg && firstImg.src) {
-                      const url = new URL(firstImg.src, window.location.href);
-                      baseUrl = url.origin;
+              // Don't prevent default here - let the HTML be processed normally
+              // Only handle images separately if needed
+              hasHtmlWithImages = true;
+              break;
+            }
+          }
+        }
+
+        // If there are image files, handle them separately
+        if (hasImageFiles || hasImageItems) {
+          const fileSet = new Set<File>();
+          
+          if (clipboardData.files && clipboardData.files.length > 0) {
+            Array.from(clipboardData.files).forEach((f) => {
+              if (f.type.startsWith("image/")) fileSet.add(f);
+            });
+          }
+          
+          if (clipboardData.items && clipboardData.items.length > 0) {
+            for (let i = 0; i < clipboardData.items.length; i++) {
+              const item = clipboardData.items[i];
+              if (item.kind === "file" && item.type.startsWith("image/")) {
+                const blob = item.getAsFile();
+                if (blob) fileSet.add(blob);
+              }
+            }
+          }
+
+          const files = Array.from(fileSet);
+          if (files.length > 0) {
+            (async () => {
+              try {
+                const filesResult = await mediaFileReader(files, ACCEPTABLE_IMAGE_TYPES);
+                for (const { file } of filesResult) {
+                  if (isMimeType(file, ACCEPTABLE_IMAGE_TYPES)) {
+                    let finalFile = file;
+                    try {
+                      const compressed = await imageCompression(file, {
+                        maxSizeMB: 1,
+                        maxWidthOrHeight: 1024,
+                        useWebWorker: true,
+                      });
+                      finalFile = new File([compressed], file.name, {
+                        type: file.type,
+                        lastModified: Date.now(),
+                      });
+                      console.log('[CopyPastePlugin] Compressed pasted file:', finalFile);
+                    } catch (err) {
+                      console.error("[CopyPastePlugin] Image compression error:", err);
+                    }
+                    console.log('[CopyPastePlugin] Uploading pasted file...');
+                    const uploadedUrl = await uploadFile(finalFile);
+                    if (uploadedUrl && onImageUploaded) {
+                      console.log('[CopyPastePlugin] Upload success! URL:', uploadedUrl);
+                      onImageUploaded(uploadedUrl, finalFile);
+                    } else if (!uploadedUrl) {
+                      console.error('[CopyPastePlugin] Upload failed, no URL returned');
                     }
                   }
-                } catch (e) { baseUrl = window.location.origin; }
-                if (!baseUrl) baseUrl = window.location.origin;
+                }
+              } catch (error) {
+                console.error("[CopyPastePlugin] Error processing files:", error);
+              }
+            })();
+          }
+        }
 
-                // <img src="..."> tag'lerini bul ve placeholder ile değiştir
+        // For HTML content with images, let the default paste handle it
+        // but also process images separately if needed
+        if (hasHtmlWithImages && clipboardData.items) {
+          for (let i = 0; i < clipboardData.items.length; i++) {
+            const item = clipboardData.items[i];
+            if (item.type === "text/html") {
+              item.getAsString((rawHtml) => {
+                // Process images in HTML without preventing default paste
                 const imgRegex = /<img([^>]+)src=["']([^"']+)["']([^>]*)>/gi;
                 let match;
-                let newHtml = htmlString;
                 const localImgPlaceholders: { placeholder: string, originalSrc: string }[] = [];
-                while ((match = imgRegex.exec(htmlString)) !== null) {
+                
+                while ((match = imgRegex.exec(rawHtml)) !== null) {
                   let originalSrc = match[2];
-                  // D: Resolve relative URLs
-                  originalSrc = resolveUrl(originalSrc, baseUrl);
                   const placeholder = generateUniquePlaceholder();
                   localImgPlaceholders.push({ placeholder, originalSrc });
-                  // Replace only this occurrence
-                  newHtml = newHtml.replace(match[0], `<img${match[1]}src=\"${placeholder}\"${match[3]}>`);
                   console.log('[CopyPastePlugin] [PASTE] Detected pasted image in HTML:', originalSrc, '-> placeholder:', placeholder);
                 }
-                // Logging all placeholders for this paste event
-                console.log('[CopyPastePlugin] [PASTE] All placeholders for this event:', localImgPlaceholders.map(p => p.placeholder));
-                // Basit bir HTML parser: <p>, <br>, <img> ve text
-                editor.update(() => {
-                  const tempDiv = document.createElement('div');
-                  tempDiv.innerHTML = newHtml;
-                  const root = $getRoot();
-                  function parseNode(domNode: any): any {
-                    if (domNode.nodeType === Node.TEXT_NODE) {
-                      const text = domNode.textContent || '';
-                      if (text.trim()) {
-                        return $createTextNode(text);
-                      }
-                      return null;
-                    } else if (domNode.nodeType === Node.ELEMENT_NODE) {
-                      const el = domNode;
-                      if (el.tagName === 'BR') {
-                        return $createTextNode('\n');
-                      } else if (el.tagName === 'IMG') {
-                        const src = el.getAttribute('src') || '';
-                        // Image node olarak ekle
-                        return $createImageNode({ src, altText: '' });
-                      } else if (el.tagName === 'P') {
-                        const p = $createParagraphNode();
-                        Array.from(el.childNodes).forEach((child: any) => {
-                          const node = parseNode(child);
-                          if (Array.isArray(node)) {
-                            node.forEach((n: any) => {
-                              if (n && typeof n.getKey === 'function') p.append(n);
-                            });
-                          } else if (node && typeof node.getKey === 'function') {
-                            p.append(node);
-                          }
-                        });
-                        return p;
-                      } else {
-                        // Diğer elementler için çocuklarını sırayla ekle
-                        const frag: any[] = [];
-                        Array.from(el.childNodes).forEach((child: any) => {
-                          const node = parseNode(child);
-                          if (node) frag.push(node);
-                        });
-                        return frag;
-                      }
-                    }
-                    return null;
-                  }
-                  Array.from(tempDiv.childNodes).forEach((domNode: any) => {
-                    const node = parseNode(domNode);
-                    if (Array.isArray(node)) {
-                      // Her bir array'i bir paragraph'a sar
-                      const p = $createParagraphNode();
-                      node.forEach((n: any) => { if (n && typeof n.getKey === 'function') p.append(n); });
-                      if (p.getChildrenSize() > 0) root.append(p);
-                    } else if (node && typeof node.getKey === 'function') {
-                      root.append(node);
-                    } else if (node) {
-                      // Tek başına text node dönerse, paragraph'a sar
-                      const p = $createParagraphNode();
-                      p.append(node);
-                      root.append(p);
-                    }
-                  });
-                });
-                // Her img için upload başlat
+
+                // Process each image
                 localImgPlaceholders.forEach(({ placeholder, originalSrc }) => {
                   (async () => {
                     try {
@@ -253,6 +245,7 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
                         file = new File([blob], `clipboard-img-url-${Date.now()}.${ext}`, { type: mime });
                         console.log('[CopyPastePlugin] Created File from remote image:', file);
                       }
+                      
                       if (file) {
                         let finalFile = file;
                         try {
@@ -269,21 +262,18 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
                         } catch (err) {
                           console.error("[CopyPastePlugin] Image compression error:", err);
                         }
+                        
                         console.log('[CopyPastePlugin] Uploading image...');
                         const uploadedUrl = await uploadFile(finalFile);
-                        // D: Always use full URL
                         let fullUrl: any = uploadedUrl;
                         if (uploadedUrl && typeof uploadedUrl === 'object' && (uploadedUrl as any).url) {
-                          // Defensive: handle if uploadFile ever returns an object
                           fullUrl = (uploadedUrl as any).url;
                         }
                         if (fullUrl && typeof fullUrl === 'string' && !fullUrl.startsWith('http')) {
-                          // You may want to change this to your actual domain
                           fullUrl = `${window.location.origin}${fullUrl.startsWith('/') ? '' : '/'}${fullUrl}`;
                         }
-                        if (typeof fullUrl !== 'string') {
-                          console.error('[CopyPastePlugin] fullUrl is not a string:', fullUrl);
-                        } else if (fullUrl) {
+                        
+                        if (typeof fullUrl === 'string' && fullUrl) {
                           console.log('[CopyPastePlugin] Upload success! URL:', fullUrl);
                           updateImageSrcInEditorAll(placeholder, fullUrl);
                           if (onImageUploaded) onImageUploaded(fullUrl, finalFile);
@@ -298,68 +288,12 @@ export default function CopyPastePlugin({ onImageUploaded }: CopyPastePluginProp
                   })();
                 });
               });
-              handled = true;
+              break;
             }
           }
         }
-        // 2. Eğer image dosyası varsa (clipboardData.files), onları upload et
-        const fileSet = new Set<File>();
-        if (clipboardData.files && clipboardData.files.length > 0) {
-          Array.from(clipboardData.files).forEach((f) => {
-            if (f.type.startsWith("image/")) fileSet.add(f);
-          });
-        }
-        if (clipboardData.items && clipboardData.items.length > 0) {
-          for (let i = 0; i < clipboardData.items.length; i++) {
-            const item = clipboardData.items[i];
-            if (item.kind === "file" && item.type.startsWith("image/")) {
-              const blob = item.getAsFile();
-              if (blob) fileSet.add(blob);
-            }
-          }
-        }
-        const files = Array.from(fileSet);
-        if (files.length > 0) {
-          (async () => {
-            try {
-              const filesResult = await mediaFileReader(files, ACCEPTABLE_IMAGE_TYPES);
-              for (const { file } of filesResult) {
-                if (isMimeType(file, ACCEPTABLE_IMAGE_TYPES)) {
-                  let finalFile = file;
-                  try {
-                    const compressed = await imageCompression(file, {
-                      maxSizeMB: 1,
-                      maxWidthOrHeight: 1024,
-                      useWebWorker: true,
-                    });
-                    finalFile = new File([compressed], file.name, {
-                      type: file.type,
-                      lastModified: Date.now(),
-                    });
-                    console.log('[CopyPastePlugin] Compressed pasted file:', finalFile);
-                  } catch (err) {
-                    console.error("[CopyPastePlugin] Image compression error:", err);
-                  }
-                  console.log('[CopyPastePlugin] Uploading pasted file...');
-                  const uploadedUrl = await uploadFile(finalFile);
-                  if (uploadedUrl && onImageUploaded) {
-                    console.log('[CopyPastePlugin] Upload success! URL:', uploadedUrl);
-                    onImageUploaded(uploadedUrl, finalFile);
-                  } else if (!uploadedUrl) {
-                    console.error('[CopyPastePlugin] Upload failed, no URL returned');
-                  }
-                }
-              }
-            } catch (error) {
-              console.error("[CopyPastePlugin] Error processing files:", error);
-            }
-          })();
-        }
-        // Eğer HTML paste işlemi yapıldıysa, default paste'i engelle
-        if (handled) {
-          return true;
-        }
-        // Diğer tüm durumlarda default paste davranışına izin ver
+
+        // Always allow default paste behavior for text and other content
         return false;
       },
       COMMAND_PRIORITY_LOW
