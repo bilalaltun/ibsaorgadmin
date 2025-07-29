@@ -62,8 +62,9 @@ export default function LinksTable() {
 
   const handleToggle = async (link) => {
     // Sadece güncellenebilir alanları gönder
-    const { ...updatable } = link;
-    updatable.isactive = !link.isactive;
+    const updatable = {
+      isactive: !link.isactive
+    };
     Swal.fire({
       title: "Updating...",
       allowOutsideClick: false,
