@@ -36,15 +36,13 @@
  *         required: false
  *         schema:
  *           type: integer
- *           default: 10
- *         description: Sayfa başına kayıt sayısı
+ *         description: Sayfa başına kayıt sayısı (currentPage ile birlikte kullanılmalı)
  *       - in: query
  *         name: currentPage
  *         required: false
  *         schema:
  *           type: integer
- *           default: 1
- *         description: Sayfa numarası
+ *         description: Sayfa numarası (pageSize ile birlikte kullanılmalı)
  *     responses:
  *       200:
  *         description: Blog(lar) getirildi
@@ -234,8 +232,8 @@ const handler = async (req, res) => {
         id,
         link,
         category_id,
-        pageSize = 1000,
-        currentPage = 1,
+        pageSize,
+        currentPage,
       } = req.query;
 
       // category_id'yi normalize et (tekil veya dizi olabilir)
@@ -245,27 +243,11 @@ const handler = async (req, res) => {
           ? [parseInt(category_id)]
           : [];
 
-      // Sadece superadmin olmayan kullanıcılar için kategori kontrolü
-      // if (req.user?.role !== "superadmin") {
-      //   if (!categoryIds.length) {
-      //     return res.status(400).json({ error: "En az bir kategori seçilmelidir" });
-      //   }
-
-      //   // Her kategori için okuma yetkisi kontrolü
-      //   const checks = await Promise.all(
-      //     categoryIds.map(catId => checkPermission(req.user.id, catId, "read"))
-      //   );
-      //   const allAllowed = checks.every(Boolean);
-
-      //   if (!allAllowed) {
-      //     return res.status(403).json({
-      //       error: "Bazı kategoriler için blog okuma yetkiniz yok.",
-      //     });
-      //   }
-      // }
-
-      const pageInt = Math.max(parseInt(pageSize), 1);
-      const currentPageInt = Math.max(parseInt(currentPage), 1);
+      // Pagination kontrolü - sadece her iki parametre de varsa pagination uygula
+      const hasPagination = pageSize !== undefined && currentPage !== undefined;
+      const pageSizeInt = hasPagination ? Math.max(parseInt(pageSize), 1) : null;
+      const currentPageInt = hasPagination ? Math.max(parseInt(currentPage), 1) : null;
+      const offset = hasPagination ? (currentPageInt - 1) * pageSizeInt : null;
 
       // Tekil blog sorgusu (id veya link ile)
       if (id || link) {
@@ -302,10 +284,11 @@ const handler = async (req, res) => {
       }
       const totalData = await countQuery.count("* as count").first();
 
-      // Sayfalı blog verisi
-      const blogs = await query
-        .limit(pageInt)
-        .offset((currentPageInt - 1) * pageInt);
+      // Pagination uygula sadece parametreler varsa
+      if (hasPagination) {
+        query = query.limit(pageSizeInt).offset(offset);
+      }
+      const blogs = await query;
 
       const allTags = await db("BlogTags");
       const allCategories = await db("Categories");
@@ -327,12 +310,12 @@ const handler = async (req, res) => {
 
       return res.status(200).json({
         data: filtered,
-        pagination: {
-          pageSize: pageInt,
+        pagination: hasPagination ? {
+          pageSize: pageSizeInt,
           currentPage: currentPageInt,
           total: totalData.count,
-          totalPages: Math.ceil(totalData.count / pageInt),
-        },
+          totalPages: Math.ceil(totalData.count / pageSizeInt),
+        } : undefined,
       });
     } catch (err) {
       console.error("[GET /blogs]", err);

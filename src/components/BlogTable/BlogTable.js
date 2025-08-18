@@ -14,12 +14,12 @@ export default function BlogTable({ blogs, fetchBlogs }) {
   const [sortField, setSortField] = useState(null);
   const [sortAsc, setSortAsc] = useState(true);
 
-  const allowedCategories = Cookies.get("user")
-    ? JSON.parse(Cookies.get("user"))?.category_ids || []
-    : [];
-
   const filtered = useMemo(() => {
     if (!Array.isArray(blogs)) return [];
+    
+    const allowedCategories = Cookies.get("user")
+      ? JSON.parse(Cookies.get("user"))?.category_ids || []
+      : [];
     
     const query = search.toLowerCase().trim();
     
@@ -51,7 +51,7 @@ export default function BlogTable({ blogs, fetchBlogs }) {
         field.toLowerCase().includes(query)
       );
     });
-  }, [search, blogs, allowedCategories]);
+  }, [search, blogs]);
 
   const sorted = useMemo(() => {
     if (!sortField) return filtered;
@@ -194,7 +194,7 @@ export default function BlogTable({ blogs, fetchBlogs }) {
             Found: <b>{filtered.length}</b> records
             {search && (
               <span className={styles.searchStatus}>
-                {" "}for "{search}"
+                {" "}for &quot;{search}&quot;
               </span>
             )}
           </span>
@@ -250,7 +250,7 @@ export default function BlogTable({ blogs, fetchBlogs }) {
               <td colSpan={6} style={{ textAlign: "center", padding: "1rem" }}>
                 {search ? (
                   <div className={styles.noResults}>
-                    <p>No blogs found matching "{search}"</p>
+                    <p>No blogs found matching &quot;{search}&quot;</p>
                     <button 
                       onClick={clearSearch}
                       className={styles.clearSearchLink}

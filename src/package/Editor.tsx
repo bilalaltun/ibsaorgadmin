@@ -45,7 +45,6 @@ import ComponentPickerPlugin from "./plugins/ComponentPickerPlugin";
 import ContextMenuPlugin from "./plugins/ContextMenuPlugin";
 import DragDropPaste from "./plugins/DragDropPastePlugin";
 import CopyPastePlugin from "./plugins/CopyPastePlugin";
-import CopyPasteDebugPlugin from "./plugins/CopyPasteDebugPlugin";
 import DraggableBlockPlugin from "./plugins/DraggableBlockPlugin";
 import EmojiPickerPlugin from "./plugins/EmojiPickerPlugin";
 import EmojisPlugin from "./plugins/EmojisPlugin";
@@ -146,7 +145,6 @@ export default function Editor({
       0
     );
   }, [editor, onChange]);
-  
 
   useEffect(() => {
     const updateViewPortWidth = () => {
@@ -164,7 +162,7 @@ export default function Editor({
       window.removeEventListener("resize", updateViewPortWidth);
     };
   }, [isSmallWidthViewport]);
-  
+
   useEffect(() => {
     if (!value) return;
 
@@ -221,7 +219,6 @@ export default function Editor({
         {isMaxLength && <MaxLengthPlugin maxLength={30} />}
         <DragDropPaste />
         <CopyPastePlugin />
-        <CopyPasteDebugPlugin />
         <AutoFocusPlugin />
         {selectionAlwaysOnDisplay && <SelectionAlwaysOnDisplay />}
         <ClearEditorPlugin />

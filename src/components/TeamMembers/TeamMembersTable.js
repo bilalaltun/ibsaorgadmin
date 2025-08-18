@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Swal from "sweetalert2";
 import { FaPen, FaTrash } from "react-icons/fa";
@@ -14,7 +14,7 @@ export default function TeamMemberTable() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     try {
       const res = await fetch(
         `/api/teammembers?pageSize=${pageSize}&currentPage=${currentPage}`
@@ -28,11 +28,11 @@ export default function TeamMemberTable() {
       console.error("Fetch error:", err);
       Swal.fire("Error", "Failed to load team members.", "error");
     }
-  };
+  }, [currentPage, pageSize]);
 
   useEffect(() => {
     fetchMembers();
-  }, [currentPage, pageSize]);
+  }, [fetchMembers]);
 
   const handleDelete = async (id) => {
     const confirm = await Swal.fire({

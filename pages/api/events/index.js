@@ -1,4 +1,4 @@
-/* eslint-disable */
+
 /**
  * @swagger
  * tags:
@@ -42,6 +42,28 @@
  *           type: integer
  *           default: 1
  *         description: Sayfa numarası
+ *       - in: query
+ *         name: sortBy
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [title, start_date, end_date, location, created_at]
+ *           default: start_date
+ *         description: Sıralama için kullanılacak alan
+ *       - in: query
+ *         name: sortOrder
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: Sıralama yönü (asc: artan, desc: azalan)
+ *       - in: query
+ *         name: isactive
+ *         required: false
+ *         schema:
+ *           type: boolean
+ *         description: Aktif/pasif durumuna göre filtreleme
  *     responses:
  *       200:
  *         description: Etkinlik(ler) getirildi *
@@ -237,7 +259,14 @@ const handler = async (req, res) => {
 
   if (method === "GET") {
     try {
-      let { category_id, pageSize = 1000, currentPage = 1 } = req.query;
+      let { 
+        category_id, 
+        pageSize = 1000, 
+        currentPage = 1, 
+        sortBy = 'start_date', 
+        sortOrder = 'desc',
+        isactive 
+      } = req.query;
 
       const categoryIds = Array.isArray(category_id)
         ? category_id.map((id) => parseInt(id))
@@ -248,6 +277,24 @@ const handler = async (req, res) => {
       const pageInt = Math.max(parseInt(pageSize), 1);
       const currentPageInt = Math.max(parseInt(currentPage), 1);
       const offset = (currentPageInt - 1) * pageInt;
+
+      // Validate sortBy parameter
+      const allowedSortFields = ['title', 'start_date', 'end_date', 'location', 'created_at'];
+      if (!allowedSortFields.includes(sortBy)) {
+        sortBy = 'start_date';
+      }
+
+      // Validate sortOrder parameter
+      const allowedSortOrders = ['asc', 'desc'];
+      if (!allowedSortOrders.includes(sortOrder.toLowerCase())) {
+        sortOrder = 'desc';
+      }
+
+      // Parse isactive parameter
+      let isactiveFilter = null;
+      if (isactive !== undefined) {
+        isactiveFilter = isactive === 'true' || isactive === true;
+      }
 
       if (id) {
         const event = await db("Events")
@@ -264,14 +311,20 @@ const handler = async (req, res) => {
         return res.status(200).json(event);
       }
 
-      let query = db("Events").orderBy("start_date", "desc");
+      let query = db("Events").orderBy(sortBy, sortOrder);
       if (categoryIds.length) {
         query = query.whereIn("Events.category_id", categoryIds);
+      }
+      if (isactiveFilter !== null) {
+        query = query.where("Events.isactive", isactiveFilter);
       }
 
       const countQuery = db("Events");
       if (categoryIds.length) {
         countQuery.whereIn("category_id", categoryIds);
+      }
+      if (isactiveFilter !== null) {
+        countQuery.where("isactive", isactiveFilter);
       }
       const totalData = await countQuery.count("id as count").first();
 

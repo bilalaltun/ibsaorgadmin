@@ -111,7 +111,7 @@ export default function SliderSortPage() {
     };
 
     updateOrder();
-  }, [sortedSliders]);
+  }, [sortedSliders, hasDragged, sliders]);
 
   const handleDragEnd = (event) => {
     const { active, over } = event;

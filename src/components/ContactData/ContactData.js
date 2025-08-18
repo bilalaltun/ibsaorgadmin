@@ -1,7 +1,7 @@
 // ContactFormSubmissionsTable.js
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import Swal from "sweetalert2";
 import { FaTrash } from "react-icons/fa";
 import styles from "./styles.module.css";
@@ -27,7 +27,7 @@ export default function ContactFormSubmissionsTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const token = Cookies.get("token");
 
-  const fetchRecords = async () => {
+  const fetchRecords = useCallback(async () => {
     const res = await fetch("/api/forms", {
       method: "GET",
       headers: {
@@ -36,11 +36,11 @@ export default function ContactFormSubmissionsTable() {
     });
     const json = await res.json();
     setRecords(json);
-  };
+  }, [token]);
 
   useEffect(() => {
     fetchRecords();
-  }, []);
+  }, [fetchRecords]);
 
   const filtered = useMemo(() => {
     if (!Array.isArray(records)) return [];
