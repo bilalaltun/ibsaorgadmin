@@ -57,7 +57,7 @@
  *           type: string
  *           enum: [asc, desc]
  *           default: desc
- *         description: Sıralama yönü (asc: artan, desc: azalan)
+ *         description: "Sıralama yönü (asc: artan, desc: azalan)"
  *       - in: query
  *         name: isactive
  *         required: false
