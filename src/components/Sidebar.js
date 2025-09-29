@@ -25,11 +25,15 @@ import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default function Sidebar({ toggleSidebar }) {
+export default function Sidebar({ toggleSidebar, isOpen }) {
   const router = useRouter();
   const [role, setRole] = useState(null);
   const handleNavigate = (path) => {
     router.push(path);
+    // Mobilde menüyü kapat
+    if (window.innerWidth <= 1024) {
+      toggleSidebar();
+    }
   };
 
   useEffect(() => {
@@ -45,22 +49,24 @@ export default function Sidebar({ toggleSidebar }) {
   }, []);
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <button
         onClick={toggleSidebar}
         aria-label="Toggle sidebar"
-        className="d-hidden"
+        className="sidebar-close-btn"
         style={{
           position: "absolute",
           top: "14px",
+          right: "14px",
           fontSize: "1.5rem",
           background: "transparent",
           border: "none",
           color: "#fff",
           cursor: "pointer",
+          zIndex: 1001,
         }}
       >
-        x
+        ×
       </button>
       <img
         src="https://aifdigital.com.tr/assets/img/logo/logo-white.png"

@@ -200,6 +200,17 @@ a {
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Desktop görünümde sidebar her zaman açık */
+@media (min-width: 1025px) {
+  .sidebar {
+    position: relative;
+    transform: translateX(0) !important;
+  }
+  .sidebar-close-btn {
+    display: none !important;
+  }
+}
+
 /* Başlık */
 .sidebar-title {
   font-size: 1rem;
@@ -952,6 +963,24 @@ input[type="file"] {
   }
   .sidebar.open {
     transform: translateX(0);
+  }
+  .sidebar-close-btn {
+    display: block !important;
+  }
+  /* Sidebar açıkken arka plan overlay */
+  .sidebar.open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+  }
+  /* Mobilde sidebar başlangıçta kapalı */
+  .sidebar:not(.open) {
+    transform: translateX(-100%);
   }
   .main-layout {
     padding: 0.5rem;
