@@ -167,6 +167,7 @@ export default function CountriesTable() {
         </div>
       </div>
 
+      {/* Desktop Tablo Görünümü */}
       <table className={styles.table}>
         <thead>
           <tr>
@@ -232,6 +233,7 @@ export default function CountriesTable() {
           )}
         </tbody>
       </table>
+
 
       {totalPages > 1 && (
         <div className={styles.pagination}>

@@ -7,7 +7,7 @@ export default function Page() {
     <Layout>
       <div>
         <h2>Countries</h2>
-        <div className="grid">
+        <div>
           <CountriesTable />
         </div>
       </div>
